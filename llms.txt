@@ -1,0 +1,18 @@
+# OmniTool Hub (FreeStack Developer & AI Utilities)
+
+> 100% Client-Side, Privacy-First, Zero-Latency Suite of 52+ Developer & AI Engineering Utilities.
+
+## Overview
+OmniTool Hub is an offline, WebCrypto-powered suite of developer utilities designed for zero data leakage, instant execution, and modern AI engineering.
+
+## Key Tool Capabilities
+- **Code & Data**: JSON to Java Lombok POJO / DTO, JSONPath Syntax Tester, XML ↔ JSON converter, JSON to TypeScript/Go, YAML to JSON, SQL formatter, Diff checker, Markdown tables.
+- **Security & Auth**: JWT local inspector, SHA-256 / HMAC hasher, Base64/URL codec, RFC4122 UUID generator, Password entropy evaluator, X.509 SSL certificate inspector, RSA 2048/4096 PEM generator, CRC-32 & Adler-32 checksums.
+- **DevOps & Network**: cURL to JS/Python/Go converter, Raw HTTP Headers to dict, Regex matcher, Cron natural language visualizer, Crontab to Systemd converter, Chmod calculator, CIDR calculator, .env to K8s Secret generator, Nginx htpasswd generator, Docker Compose service builder.
+- **Design & Media**: Code snippet to Ray.so card image, SVG optimizer & PNG renderer, HSL color palette, CSS glassmorphism studio, ISO/IEC 18004 QR code maker, OpenGraph SEO card previewer.
+- **AI Engineering**: LLM Token & Cost estimator, Prompt template variable interpolator, AI Structured Outputs & Function Calling JSON Schema validator, RAG Cosine similarity calculator, AI Prompt Shield injection guard, DeepSeek-R1 <think> CoT reasoning extractor & fine-tuning JSONL exporter.
+
+## Platform Links
+- Live Web App: https://freestack-fawn.vercel.app/tools/index.html
+- Free Resources Digest: https://freestack-fawn.vercel.app/
+- Commercial Store ($19 Lifetime License): https://molewhisperer7.gumroad.com/l/hwbklt
