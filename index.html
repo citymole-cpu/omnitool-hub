@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
@@ -1053,8 +1053,8 @@ html, body {
         </select>
         <!-- Language Switcher -->
         <select class="form-select" id="lang-switcher" onchange="setLanguage(this.value)" style="padding:5px 10px; font-size:0.8rem; border-radius:6px; cursor:pointer;">
+          <option value="en" selected>🇺🇸 English</option>
           <option value="zh">🇨🇳 简体中文</option>
-          <option value="en">🇺🇸 English</option>
           <option value="ja">🇯🇵 日本語</option>
         </select>
         <button class="btn-gift-referral" id="btn-referral-open" onclick="openReferralModal()">🎁 邀请领 Pro</button>
@@ -1649,7 +1649,7 @@ const TOOL_I18N = {
 
 const STATE = {
   theme: localStorage.getItem('omnitool_theme') || 'cyber',
-  lang: localStorage.getItem('omnitool_lang') || 'zh',
+  lang: localStorage.getItem('omnitool_lang') || 'en',
   activeTool: 'json-format',
   isPro: localStorage.getItem('omnitool_pro_unlocked') === 'true',
   licenseKey: localStorage.getItem('omnitool_license_key') || '',
@@ -1793,7 +1793,7 @@ function setLanguage(lang) {
 }
 
 function applyI18n() {
-  const dict = I18N[STATE.lang] || I18N.zh;
+  const dict = I18N[STATE.lang] || I18N.en;
   const sIn = document.getElementById('tool-search');
   if (sIn) sIn.placeholder = dict.search_placeholder;
 
@@ -3649,7 +3649,12 @@ function initToolHandlers(tool) {
   else if (tool.id === 'xml-json-converter') {
     const xIn = document.getElementById('xml-input');
     const out = document.getElementById('xml-output');
+    const btnXmlToJson = document.getElementById('btn-xml-to-json');
+    const btnJsonToXml = document.getElementById('btn-json-to-xml');
+
     function xmlToJson() {
+      btnXmlToJson?.classList.add('active');
+      btnJsonToXml?.classList.remove('active');
       try {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xIn.value, "text/xml");
@@ -3694,8 +3699,10 @@ function initToolHandlers(tool) {
         out.textContent = '// XML Parsing Error: ' + e.message;
       }
     }
-    document.getElementById('btn-xml-to-json')?.addEventListener('click', xmlToJson);
-    document.getElementById('btn-json-to-xml')?.addEventListener('click', () => {
+
+    function jsonToXml() {
+      btnJsonToXml?.classList.add('active');
+      btnXmlToJson?.classList.remove('active');
       try {
         const obj = JSON.parse(xIn.value);
         function toXml(o, tag = 'root') {
@@ -3707,8 +3714,11 @@ function initToolHandlers(tool) {
           return s;
         }
         out.textContent = toXml(obj);
-      } catch (e) { out.textContent = '// Error'; }
-    });
+      } catch (e) { out.textContent = '// Error: Invalid JSON input'; }
+    }
+
+    btnXmlToJson?.addEventListener('click', xmlToJson);
+    btnJsonToXml?.addEventListener('click', jsonToXml);
     document.getElementById('btn-xml-sample')?.addEventListener('click', () => {
       xIn.value = `<xml>\n  <return_code><![CDATA[SUCCESS]]></return_code>\n  <return_msg><![CDATA[OK]]></return_msg>\n  <appid><![CDATA[wx2421b1c4370ec43b]]></appid>\n  <mch_id><![CDATA[10000100]]></mch_id>\n  <total_fee>1900</total_fee>\n</xml>`;
       xmlToJson();
@@ -3816,18 +3826,32 @@ function initToolHandlers(tool) {
   else if (tool.id === 'html-entity-converter') {
     const inp = document.getElementById('html-ent-input');
     const out = document.getElementById('html-ent-output');
+    const encBtn = document.getElementById('btn-html-enc');
+    const decBtn = document.getElementById('btn-html-dec');
+    const numBtn = document.getElementById('btn-html-numeric');
+
+    function setActive(b) {
+      [encBtn, decBtn, numBtn].forEach(x => x?.classList.remove('active'));
+      b?.classList.add('active');
+    }
+
     function enc() {
+      setActive(encBtn);
       out.textContent = inp.value.replace(/[\u00A0-\u9999<>\&"']/g, c => `&#${c.charCodeAt(0)};`);
     }
     function dec() {
+      setActive(decBtn);
       const doc = new DOMParser().parseFromString(inp.value, 'text/html');
       out.textContent = doc.body.textContent || '';
     }
-    document.getElementById('btn-html-enc')?.addEventListener('click', enc);
-    document.getElementById('btn-html-dec')?.addEventListener('click', dec);
-    document.getElementById('btn-html-numeric')?.addEventListener('click', () => {
+    function numeric() {
+      setActive(numBtn);
       out.textContent = Array.from(inp.value).map(c => `&#${c.codePointAt(0)};`).join('');
-    });
+    }
+
+    encBtn?.addEventListener('click', enc);
+    decBtn?.addEventListener('click', dec);
+    numBtn?.addEventListener('click', numeric);
     document.getElementById('btn-html-sample')?.addEventListener('click', () => {
       inp.value = `<div class="hero">Hello & Welcome to "OmniTool" 🚀</div>`;
       enc();
@@ -4112,20 +4136,47 @@ function initToolHandlers(tool) {
     const domIn = document.getElementById('dns-domain');
     const out = document.getElementById('dns-output');
     const exp = document.getElementById('dns-explanation');
-    function setSpf() {
-      const d = domIn.value.trim() || 'example.com';
-      out.textContent = `Type: TXT\nName: @ (or ${d})\nValue: "v=spf1 include:_spf.google.com ~all"\nTTL: 3600`;
-      exp.innerHTML = `<strong>SPF Record:</strong> Authorizes Google Workspace to send emails on behalf of <code>${d}</code>.`;
+
+    const spfBtn = document.getElementById('btn-dns-spf');
+    const dmarcBtn = document.getElementById('btn-dns-dmarc');
+    const mxBtn = document.getElementById('btn-dns-mx');
+    const dkimBtn = document.getElementById('btn-dns-dkim');
+
+    let currentDnsType = 'spf';
+
+    function setBtnActive(b) {
+      [spfBtn, dmarcBtn, mxBtn, dkimBtn].forEach(x => x?.classList.remove('active'));
+      b?.classList.add('active');
     }
-    document.getElementById('btn-dns-spf')?.addEventListener('click', setSpf);
-    document.getElementById('btn-dns-dmarc')?.addEventListener('click', () => {
+
+    function renderDns() {
       const d = domIn.value.trim() || 'example.com';
-      out.textContent = `Type: TXT\nName: _dmarc.${d}\nValue: "v=DMARC1; p=reject; rua=mailto:dmarc@${d}; sp=reject; pct=100"`;
-      exp.innerHTML = `<strong>DMARC Record:</strong> Instructs mail providers to reject spoofed emails.`;
-    });
+      if (currentDnsType === 'spf') {
+        setBtnActive(spfBtn);
+        out.textContent = `Type: TXT\nName: @ (or ${d})\nValue: "v=spf1 include:_spf.google.com ~all"\nTTL: 3600`;
+        exp.innerHTML = `<strong>SPF Record:</strong> Authorizes Google Workspace to send emails on behalf of <code>${d}</code>.`;
+      } else if (currentDnsType === 'dmarc') {
+        setBtnActive(dmarcBtn);
+        out.textContent = `Type: TXT\nName: _dmarc.${d}\nValue: "v=DMARC1; p=reject; rua=mailto:dmarc@${d}; sp=reject; pct=100"\nTTL: 3600`;
+        exp.innerHTML = `<strong>DMARC Record:</strong> Instructs mail providers to reject spoofed emails.`;
+      } else if (currentDnsType === 'mx') {
+        setBtnActive(mxBtn);
+        out.textContent = `Priority: 1   Target: ASPMX.L.GOOGLE.COM.\nPriority: 5   Target: ALT1.ASPMX.L.GOOGLE.COM.\nPriority: 5   Target: ALT2.ASPMX.L.GOOGLE.COM.\nPriority: 10  Target: ALT3.ASPMX.L.GOOGLE.COM.\nPriority: 10  Target: ALT4.ASPMX.L.GOOGLE.COM.`;
+        exp.innerHTML = `<strong>MX Records:</strong> Standard Google Workspace mail exchange servers for <code>${d}</code>.`;
+      } else if (currentDnsType === 'dkim') {
+        setBtnActive(dkimBtn);
+        out.textContent = `Type: TXT\nName: google._domainkey.${d}\nValue: "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC3..."\nTTL: 3600`;
+        exp.innerHTML = `<strong>DKIM Record:</strong> Authenticates outgoing messages with digital signatures.`;
+      }
+    }
+
+    spfBtn?.addEventListener('click', () => { currentDnsType = 'spf'; renderDns(); });
+    dmarcBtn?.addEventListener('click', () => { currentDnsType = 'dmarc'; renderDns(); });
+    mxBtn?.addEventListener('click', () => { currentDnsType = 'mx'; renderDns(); });
+    dkimBtn?.addEventListener('click', () => { currentDnsType = 'dkim'; renderDns(); });
     document.getElementById('btn-dns-copy')?.addEventListener('click', () => copyText(out.textContent));
-    domIn.addEventListener('input', setSpf);
-    setSpf();
+    domIn.addEventListener('input', renderDns);
+    renderDns();
   }
 
   else if (tool.id === 'json-format') {
@@ -4157,19 +4208,63 @@ function initToolHandlers(tool) {
   else if (tool.id === 'json-csv') {
     const inp = document.getElementById('csv-input');
     const out = document.getElementById('csv-output');
+    const inLbl = document.getElementById('csv-in-label');
+    const outLbl = document.getElementById('csv-out-label');
+    const btnJtoC = document.getElementById('btn-json-to-csv');
+    const btnCtoJ = document.getElementById('btn-csv-to-json');
+    let mode = 'json-to-csv';
+
+    function setActive(b) {
+      [btnJtoC, btnCtoJ].forEach(x => x?.classList.remove('active'));
+      b?.classList.add('active');
+    }
+
     function jsonToCsv() {
+      mode = 'json-to-csv';
+      setActive(btnJtoC);
+      if (inLbl) inLbl.textContent = STATE.lang === 'zh' ? 'JSON 输入 (对象数组)' : 'JSON INPUT';
+      if (outLbl) outLbl.textContent = STATE.lang === 'zh' ? 'CSV 转换结果' : 'CSV OUTPUT';
       try {
-        const data = JSON.parse(inp.value);
+        const data = JSON.parse(inp.value.trim() || '[]');
+        if (!Array.isArray(data) || !data.length) { out.textContent = '// Enter JSON array of objects'; return; }
         const keys = Object.keys(data[0]);
         out.textContent = [keys.join(','), ...data.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
       } catch (e) { out.textContent = '❌ Error: ' + e.message; }
     }
-    document.getElementById('btn-json-to-csv')?.addEventListener('click', jsonToCsv);
+
+    function csvToJson() {
+      mode = 'csv-to-json';
+      setActive(btnCtoJ);
+      if (inLbl) inLbl.textContent = STATE.lang === 'zh' ? 'CSV 输入' : 'CSV INPUT';
+      if (outLbl) outLbl.textContent = STATE.lang === 'zh' ? 'JSON 转换结果' : 'JSON OUTPUT';
+      try {
+        const lines = inp.value.trim().split('\n').filter(l => l.trim());
+        if (!lines.length) { out.textContent = '// Enter CSV data'; return; }
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+        const rows = lines.slice(1).map(line => {
+          const vals = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = vals[i] ?? '');
+          return obj;
+        });
+        out.textContent = JSON.stringify(rows, null, 2);
+      } catch (e) { out.textContent = '❌ Error: ' + e.message; }
+    }
+
+    btnJtoC?.addEventListener('click', jsonToCsv);
+    btnCtoJ?.addEventListener('click', csvToJson);
     document.getElementById('btn-csv-sample')?.addEventListener('click', () => {
-      inp.value = JSON.stringify([{"id": 1, "name": "Alice", "role": "Architect"}, {"id": 2, "name": "Bob", "role": "Dev"}], null, 2);
-      jsonToCsv();
+      if (mode === 'json-to-csv') {
+        inp.value = JSON.stringify([{"id": 1, "name": "Alice", "role": "Architect"}, {"id": 2, "name": "Bob", "role": "Dev"}], null, 2);
+        jsonToCsv();
+      } else {
+        inp.value = `id,name,role\n1,Alice,Architect\n2,Bob,Dev`;
+        csvToJson();
+      }
     });
+    document.getElementById('btn-csv-clear')?.addEventListener('click', () => { inp.value = ''; out.textContent = ''; });
     document.getElementById('btn-csv-copy')?.addEventListener('click', () => copyText(out.textContent));
+    inp.addEventListener('input', () => { if (mode === 'json-to-csv') jsonToCsv(); else csvToJson(); });
     jsonToCsv();
   }
 
@@ -4181,13 +4276,21 @@ function initToolHandlers(tool) {
         const val = JSON.parse(inp.value.trim() || '{}');
         let res = `export interface ApiResponse {\n`;
         for (const [k, v] of Object.entries(val)) {
-          res += `  ${k}: ${typeof v};\n`;
+          let t = typeof v;
+          if (v === null) t = 'any';
+          else if (Array.isArray(v)) t = v.length ? `${typeof v[0]}[]` : 'any[]';
+          else if (t === 'object') t = 'Record<string, any>';
+          res += `  ${k}: ${t};\n`;
         }
         res += `}`;
         out.textContent = res;
-      } catch (e) { out.textContent = '❌ Invalid JSON'; }
+      } catch (e) { out.textContent = '// Error: ' + e.message; }
     }
     document.getElementById('btn-ts-convert')?.addEventListener('click', jsonToTs);
+    document.getElementById('btn-ts-sample')?.addEventListener('click', () => {
+      inp.value = JSON.stringify({ "id": 101, "username": "alex_dev", "is_admin": true, "roles": ["developer", "reviewer"], "profile": { "age": 28 } }, null, 2);
+      jsonToTs();
+    });
     document.getElementById('btn-ts-copy')?.addEventListener('click', () => copyText(out.textContent));
     inp.addEventListener('input', jsonToTs);
     jsonToTs();
@@ -4201,13 +4304,20 @@ function initToolHandlers(tool) {
         const val = JSON.parse(inp.value.trim() || '{}');
         let code = `type ApiResponse struct {\n`;
         for (const [k, v] of Object.entries(val)) {
-          code += `\t${capitalize(k)}\t${typeof v === 'number' ? 'int' : typeof v === 'boolean' ? 'bool' : 'string'}\t\`json:"${k}"\`\n`;
+          let t = typeof v === 'number' ? 'int64' : typeof v === 'boolean' ? 'bool' : 'string';
+          if (Array.isArray(v)) t = '[]string';
+          else if (typeof v === 'object' && v !== null) t = 'map[string]interface{}';
+          code += `\t${capitalize(k)}\t${t}\t\`json:"${k}"\`\n`;
         }
         code += `}`;
         out.textContent = code;
-      } catch (e) { out.textContent = '❌ Invalid JSON'; }
+      } catch (e) { out.textContent = '// Error: ' + e.message; }
     }
     document.getElementById('btn-go-convert')?.addEventListener('click', jsonToGo);
+    document.getElementById('btn-go-sample')?.addEventListener('click', () => {
+      inp.value = JSON.stringify({ "id": 101, "username": "alex_dev", "is_admin": true, "roles": ["developer", "reviewer"] }, null, 2);
+      jsonToGo();
+    });
     document.getElementById('btn-go-copy')?.addEventListener('click', () => copyText(out.textContent));
     inp.addEventListener('input', jsonToGo);
     jsonToGo();
@@ -4216,12 +4326,53 @@ function initToolHandlers(tool) {
   else if (tool.id === 'yaml-json') {
     const inp = document.getElementById('yaml-input');
     const out = document.getElementById('yaml-output');
-    function yamlToJson() {
-      try { if (typeof jsyaml !== 'undefined') out.textContent = JSON.stringify(jsyaml.load(inp.value), null, 2); } catch (e) { out.textContent = '❌ Error'; }
+    const inLbl = document.getElementById('yaml-in-lbl');
+    const outLbl = document.getElementById('yaml-out-lbl');
+    const btnYtoJ = document.getElementById('btn-yaml-to-json');
+    const btnJtoY = document.getElementById('btn-json-to-yaml');
+    let mode = 'yaml-to-json';
+
+    function setActive(b) {
+      [btnYtoJ, btnJtoY].forEach(x => x?.classList.remove('active'));
+      b?.classList.add('active');
     }
-    document.getElementById('btn-yaml-to-json')?.addEventListener('click', yamlToJson);
+
+    function yamlToJson() {
+      mode = 'yaml-to-json';
+      setActive(btnYtoJ);
+      if (inLbl) inLbl.textContent = 'YAML INPUT';
+      if (outLbl) outLbl.textContent = 'JSON OUTPUT';
+      try {
+        if (typeof jsyaml !== 'undefined') out.textContent = JSON.stringify(jsyaml.load(inp.value), null, 2);
+      } catch (e) { out.textContent = '❌ YAML Error: ' + e.message; }
+    }
+
+    function jsonToYaml() {
+      mode = 'json-to-yaml';
+      setActive(btnJtoY);
+      if (inLbl) inLbl.textContent = 'JSON INPUT';
+      if (outLbl) outLbl.textContent = 'YAML OUTPUT';
+      try {
+        if (typeof jsyaml !== 'undefined') {
+          const obj = JSON.parse(inp.value.trim() || '{}');
+          out.textContent = jsyaml.dump(obj);
+        }
+      } catch (e) { out.textContent = '❌ JSON Error: ' + e.message; }
+    }
+
+    btnYtoJ?.addEventListener('click', yamlToJson);
+    btnJtoY?.addEventListener('click', jsonToYaml);
+    document.getElementById('btn-yaml-sample')?.addEventListener('click', () => {
+      if (mode === 'yaml-to-json') {
+        inp.value = `version: '3.8'\nservices:\n  web:\n    image: nginx:alpine\n    ports:\n      - "80:80"\n    restart: always`;
+        yamlToJson();
+      } else {
+        inp.value = JSON.stringify({ version: "3.8", services: { web: { image: "nginx:alpine", ports: ["80:80"] } } }, null, 2);
+        jsonToYaml();
+      }
+    });
     document.getElementById('btn-yaml-copy')?.addEventListener('click', () => copyText(out.textContent));
-    inp.addEventListener('input', yamlToJson);
+    inp.addEventListener('input', () => { if (mode === 'yaml-to-json') yamlToJson(); else jsonToYaml(); });
     yamlToJson();
   }
 
@@ -4643,7 +4794,794 @@ ${p.trim() || 'You are an enterprise AI assistant providing accurate, secure res
     sIn.addEventListener('input', scanPrompt);
     scanPrompt();
   }
+
+  // ── jwt-decoder ─────────────────────────────────────────────────────────────
+  else if (tool.id === 'jwt-decoder') {
+    const inp = document.getElementById('jwt-input');
+    const headerEl = document.getElementById('jwt-header');
+    const payloadEl = document.getElementById('jwt-payload');
+    const statusEl = document.getElementById('jwt-status');
+    const isZh = STATE.lang === 'zh';
+
+    function decodeJwt() {
+      const token = inp.value.trim();
+      if (!token) {
+        headerEl.textContent = '{}';
+        payloadEl.textContent = '{}';
+        statusEl.textContent = isZh ? 'Status: 待解析' : 'Status: Ready';
+        statusEl.style.color = '';
+        return;
+      }
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) throw new Error('Not a valid JWT (expected 3 parts separated by dots)');
+
+        function b64Decode(str) {
+          const s = str.replace(/-/g, '+').replace(/_/g, '/');
+          const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - s.length % 4);
+          return JSON.parse(decodeURIComponent(atob(s + pad).split('').map(c =>
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        }
+
+        const header = b64Decode(parts[0]);
+        const payload = b64Decode(parts[1]);
+
+        headerEl.textContent = JSON.stringify(header, null, 2);
+        payloadEl.textContent = JSON.stringify(payload, null, 2);
+
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp) {
+          const diff = payload.exp - now;
+          if (diff < 0) {
+            statusEl.textContent = `⛔ ${isZh ? 'Token 已过期' : 'Token EXPIRED'} ${Math.abs(diff)}s ${isZh ? '前' : 'ago'}`;
+            statusEl.style.color = '#ef4444';
+          } else {
+            statusEl.textContent = `✅ ${isZh ? 'Token 有效，' : 'Valid — expires in'} ${diff}s`;
+            statusEl.style.color = '#10b981';
+          }
+        } else {
+          statusEl.textContent = isZh ? '✅ 解析成功（无过期时间字段）' : '✅ Decoded successfully (no exp field)';
+          statusEl.style.color = '#10b981';
+        }
+      } catch (e) {
+        headerEl.textContent = '// Parse Error';
+        payloadEl.textContent = e.message;
+        statusEl.textContent = `❌ ${e.message}`;
+        statusEl.style.color = '#ef4444';
+      }
+    }
+
+    inp.addEventListener('input', decodeJwt);
+    decodeJwt();
+  }
+
+  // ── hash-gen ─────────────────────────────────────────────────────────────────
+  else if (tool.id === 'hash-gen') {
+    const inp = document.getElementById('hash-input');
+    const keyIn = document.getElementById('hash-hmac-key');
+    const sha256El = document.getElementById('hash-sha256');
+    const sha512El = document.getElementById('hash-sha512');
+    const sha1El   = document.getElementById('hash-sha1');
+
+    async function calcHash() {
+      const text = inp.value;
+      const key  = keyIn ? keyIn.value.trim() : '';
+      if (!text) {
+        [sha256El, sha512El, sha1El].forEach(el => { if (el) el.textContent = ''; });
+        return;
+      }
+      const enc = new TextEncoder();
+      const data = enc.encode(text);
+
+      async function hmac(algo, keyBytes, msgBytes) {
+        const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: algo }, false, ['sign']);
+        const sig = await crypto.subtle.sign('HMAC', cryptoKey, msgBytes);
+        return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      async function digest(algo, bytes) {
+        const buf = await crypto.subtle.digest(algo, bytes);
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      try {
+        if (key) {
+          const keyBytes = enc.encode(key);
+          if (sha256El) sha256El.textContent = await hmac('SHA-256', keyBytes, data);
+          if (sha512El) sha512El.textContent = await hmac('SHA-512', keyBytes, data);
+          if (sha1El)   sha1El.textContent   = await hmac('SHA-1',   keyBytes, data);
+        } else {
+          if (sha256El) sha256El.textContent = await digest('SHA-256', data);
+          if (sha512El) sha512El.textContent = await digest('SHA-512', data);
+          if (sha1El)   sha1El.textContent   = await digest('SHA-1',   data);
+        }
+      } catch (e) {
+        [sha256El, sha512El, sha1El].forEach(el => { if (el) el.textContent = '// Error: ' + e.message; });
+      }
+    }
+
+    if (inp)   inp.addEventListener('input', calcHash);
+    if (keyIn) keyIn.addEventListener('input', calcHash);
+    calcHash();
+  }
+
+  // ── base64-codec (fix URL encode/decode events + button labels + active styling) ────────────
+  else if (tool.id === 'base64-codec') {
+    const inp = document.getElementById('b64-input');
+    const out = document.getElementById('b64-output');
+
+    const encBtn = document.getElementById('btn-b64-enc');
+    const decBtn = document.getElementById('btn-b64-dec');
+    const urlEncBtn = document.getElementById('btn-url-enc');
+    const urlDecBtn = document.getElementById('btn-url-dec');
+    const isZh = STATE.lang === 'zh';
+    if (encBtn) encBtn.textContent = isZh ? 'Base64 编码' : 'Base64 Encode';
+    if (decBtn) decBtn.textContent = isZh ? 'Base64 解码' : 'Base64 Decode';
+    if (urlEncBtn) urlEncBtn.textContent = 'URL Encode';
+    if (urlDecBtn) urlDecBtn.textContent = 'URL Decode';
+
+    let currentMode = 'b64-enc';
+
+    function setBtnActive(activeBtn) {
+      [encBtn, decBtn, urlEncBtn, urlDecBtn].forEach(b => b?.classList.remove('active'));
+      activeBtn?.classList.add('active');
+    }
+
+    function b64Enc() {
+      currentMode = 'b64-enc';
+      setBtnActive(encBtn);
+      try { out.textContent = btoa(unescape(encodeURIComponent(inp.value))); }
+      catch (e) { out.textContent = '// Error: ' + e.message; }
+    }
+    function b64Dec() {
+      currentMode = 'b64-dec';
+      setBtnActive(decBtn);
+      try { out.textContent = decodeURIComponent(escape(atob(inp.value.trim()))); }
+      catch (e) { out.textContent = '// Invalid Base64: ' + e.message; }
+    }
+    function urlEnc() {
+      currentMode = 'url-enc';
+      setBtnActive(urlEncBtn);
+      out.textContent = encodeURIComponent(inp.value);
+    }
+    function urlDec() {
+      currentMode = 'url-dec';
+      setBtnActive(urlDecBtn);
+      try { out.textContent = decodeURIComponent(inp.value); }
+      catch (e) { out.textContent = '// Invalid URL encoding: ' + e.message; }
+    }
+
+    function processCurrent() {
+      if (currentMode === 'b64-enc') b64Enc();
+      else if (currentMode === 'b64-dec') b64Dec();
+      else if (currentMode === 'url-enc') urlEnc();
+      else if (currentMode === 'url-dec') urlDec();
+    }
+
+    encBtn?.addEventListener('click', b64Enc);
+    decBtn?.addEventListener('click', b64Dec);
+    urlEncBtn?.addEventListener('click', urlEnc);
+    urlDecBtn?.addEventListener('click', urlDec);
+    document.getElementById('btn-b64-copy')?.addEventListener('click', () => copyText(out.textContent));
+
+    inp.addEventListener('input', processCurrent);
+    b64Enc();
+  }
+
+  // ── uuid-gen (all buttons with active indicator) ───────────────────────────
+  else if (tool.id === 'uuid-gen') {
+    const out = document.getElementById('uuid-output');
+    const u1Btn = document.getElementById('btn-gen-uuid1');
+    const u10Btn = document.getElementById('btn-gen-uuid10');
+    const u50Btn = document.getElementById('btn-gen-uuid50');
+    const passBtn = document.getElementById('btn-gen-pass');
+
+    function uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+    }
+
+    function genPass(len = 32) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
+      const arr = crypto.getRandomValues(new Uint8Array(len));
+      return Array.from(arr).map(b => chars[b % chars.length]).join('');
+    }
+
+    function generate(count, type = 'uuid', clickedBtn = null) {
+      if (clickedBtn) {
+        [u1Btn, u10Btn, u50Btn, passBtn].forEach(b => b?.classList.remove('active'));
+        clickedBtn.classList.add('active');
+      }
+      const lines = [];
+      for (let i = 0; i < count; i++) {
+        lines.push(type === 'pass' ? genPass() : uuidv4());
+      }
+      if (out) out.value = lines.join('\n');
+    }
+
+    u1Btn?.addEventListener('click',  () => generate(1, 'uuid', u1Btn));
+    u10Btn?.addEventListener('click', () => generate(10, 'uuid', u10Btn));
+    u50Btn?.addEventListener('click', () => generate(50, 'uuid', u50Btn));
+    passBtn?.addEventListener('click',   () => generate(1, 'pass', passBtn));
+    document.getElementById('btn-uuid-copy')?.addEventListener('click',  () => { if (out) copyText(out.value); });
+
+    generate(1, 'uuid', u1Btn);
+  }
+
+  // ── ssl-cert-inspector (fix sample button + improve parse feedback) ──────────
+  else if (tool.id === 'ssl-cert-inspector') {
+    const inp  = document.getElementById('ssl-input');
+    const cnEl = document.getElementById('ssl-cn');
+    const sanEl= document.getElementById('ssl-san');
+    const valEl= document.getElementById('ssl-valid');
+    const expEl= document.getElementById('ssl-expiry');
+    const issEl= document.getElementById('ssl-issuer');
+    const isZh = STATE.lang === 'zh';
+
+    const SAMPLE_PEM = `-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MQ==
+-----END CERTIFICATE-----`;
+
+    function parseCert() {
+      const raw = inp ? inp.value.trim() : '';
+      if (!raw) {
+        if (cnEl) cnEl.textContent = '-';
+        return;
+      }
+      // Best-effort DER extraction for Subject CN display
+      try {
+        const b64 = raw.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+        const der = atob(b64);
+        // Heuristic CN extraction: look for 'CN=' string pattern in decoded bytes
+        const cnMatch = der.match(/CN=([^,\x00-\x1f]{2,64})/);
+        const issMatch = der.match(/O=([^,\x00-\x1f]{2,80})/);
+
+        if (cnEl) cnEl.textContent = cnMatch ? cnMatch[1] : (isZh ? '(无法提取 CN)' : '(CN not found in DER)');
+        if (sanEl) sanEl.textContent = isZh ? '(浏览器前端无法解析 SAN，建议使用 openssl x509 -text)' : '(SAN requires server-side parsing — use openssl x509 -text)';
+        if (issEl) issEl.textContent = issMatch ? issMatch[1] : (isZh ? '(无法提取 Issuer)' : '(Issuer not found)');
+
+        // Note: JS cannot reliably extract ValidFrom/To from raw DER without a full ASN.1 parser
+        if (valEl) valEl.textContent = isZh ? '(前端 DER 解析限制，无法提取精确日期)' : '(Front-end DER parsing — exact dates unavailable; use openssl)';
+        if (expEl) expEl.textContent = isZh ? '⚠️ 建议: openssl x509 -in cert.pem -noout -dates' : '⚠️ Tip: Run openssl x509 -in cert.pem -noout -dates';
+        if (expEl) expEl.style.color = '#fbbf24';
+
+        showToast(isZh ? '证书已解析（基础字段）' : 'Certificate parsed (basic fields)');
+      } catch (e) {
+        if (cnEl) cnEl.textContent = '❌ ' + e.message;
+      }
+    }
+
+    document.getElementById('btn-ssl-parse')?.addEventListener('click', parseCert);
+    document.getElementById('btn-ssl-sample')?.addEventListener('click', () => {
+      if (inp) { inp.value = SAMPLE_PEM; parseCert(); }
+    });
+    if (inp) inp.addEventListener('input', parseCert);
+  }
+
+  // ── sql-format ───────────────────────────────────────────────────────────────
+  else if (tool.id === 'sql-format') {
+    const inp = document.getElementById('sql-input');
+    const out = document.getElementById('sql-output');
+    const fmtBtn = document.getElementById('btn-sql-fmt');
+    const minBtn = document.getElementById('btn-sql-min');
+    const upperBtn = document.getElementById('btn-sql-upper');
+    let mode = 'fmt';
+
+    function setBtnActive(b) {
+      [fmtBtn, minBtn, upperBtn].forEach(x => x?.classList.remove('active'));
+      b?.classList.add('active');
+    }
+
+    const SQL_KEYWORDS = ['SELECT', 'FROM', 'WHERE', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'JOIN', 'ON', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'OFFSET', 'UNION', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE FROM', 'CREATE TABLE', 'ALTER TABLE', 'DROP TABLE', 'AND', 'OR', 'NOT', 'IN', 'IS NULL', 'IS NOT NULL', 'AS', 'DESC', 'ASC', 'BETWEEN', 'LIKE'];
+
+    function formatSql() {
+      mode = 'fmt';
+      setBtnActive(fmtBtn);
+      let sql = inp.value.trim();
+      if (!sql) { out.textContent = '// Enter SQL query above'; return; }
+      SQL_KEYWORDS.forEach(kw => {
+        const reg = new RegExp('\\b' + kw + '\\b', 'gi');
+        sql = sql.replace(reg, kw);
+      });
+      sql = sql.replace(/\s+/g, ' ')
+               .replace(/\b(SELECT|FROM|WHERE|LEFT JOIN|RIGHT JOIN|INNER JOIN|JOIN|GROUP BY|ORDER BY|HAVING|LIMIT|OFFSET|UNION|INSERT INTO|VALUES|UPDATE|SET|DELETE FROM)\b/g, '\n$1')
+               .replace(/\n\s+/g, '\n').trim();
+      out.textContent = sql;
+    }
+
+    function minifySql() {
+      mode = 'min';
+      setBtnActive(minBtn);
+      let sql = inp.value.trim().replace(/\s+/g, ' ').replace(/\s*([,()=><])\s*/g, '$1');
+      out.textContent = sql;
+    }
+
+    function uppercaseSql() {
+      mode = 'upper';
+      setBtnActive(upperBtn);
+      let sql = inp.value;
+      SQL_KEYWORDS.forEach(kw => {
+        const reg = new RegExp('\\b' + kw + '\\b', 'gi');
+        sql = sql.replace(reg, kw);
+      });
+      out.textContent = sql;
+    }
+
+    fmtBtn?.addEventListener('click', formatSql);
+    minBtn?.addEventListener('click', minifySql);
+    upperBtn?.addEventListener('click', uppercaseSql);
+    document.getElementById('btn-sql-sample')?.addEventListener('click', () => {
+      inp.value = "select u.id, u.username, count(o.id) as total_orders, sum(o.amount) as total_spent from users u left join orders o on u.id = o.user_id where u.created_at >= '2026-01-01' and u.status = 'active' group by u.id, u.username having sum(o.amount) > 1000 order by total_spent desc limit 50";
+      formatSql();
+    });
+    document.getElementById('btn-sql-copy')?.addEventListener('click', () => copyText(out.textContent));
+    inp.addEventListener('input', () => { if (mode === 'fmt') formatSql(); else if (mode === 'min') minifySql(); else uppercaseSql(); });
+    formatSql();
+  }
+
+  // ── diff-checker ─────────────────────────────────────────────────────────────
+  else if (tool.id === 'diff-checker') {
+    const orig = document.getElementById('diff-orig');
+    const mod  = document.getElementById('diff-mod');
+    const res  = document.getElementById('diff-res');
+
+    function runDiff() {
+      const oLines = (orig.value || '').split('\n');
+      const mLines = (mod.value || '').split('\n');
+      let html = '';
+      const maxLen = Math.max(oLines.length, mLines.length);
+
+      for (let i = 0; i < maxLen; i++) {
+        const o = oLines[i];
+        const m = mLines[i];
+        if (o === undefined) {
+          html += `<div style="background:rgba(16, 185, 129, 0.15); color:#34d399; padding:2px 8px; font-family:var(--font-mono); font-size:0.85rem;">+ [L${i+1}] ${escapeHtml(m)}</div>`;
+        } else if (m === undefined) {
+          html += `<div style="background:rgba(239, 68, 68, 0.15); color:#f87171; padding:2px 8px; font-family:var(--font-mono); font-size:0.85rem;">- [L${i+1}] ${escapeHtml(o)}</div>`;
+        } else if (o !== m) {
+          html += `<div style="background:rgba(239, 68, 68, 0.15); color:#f87171; padding:2px 8px; font-family:var(--font-mono); font-size:0.85rem;">- [L${i+1}] ${escapeHtml(o)}</div>`;
+          html += `<div style="background:rgba(16, 185, 129, 0.15); color:#34d399; padding:2px 8px; font-family:var(--font-mono); font-size:0.85rem;">+ [L${i+1}] ${escapeHtml(m)}</div>`;
+        } else {
+          html += `<div style="color:var(--text-muted); padding:2px 8px; font-family:var(--font-mono); font-size:0.85rem;">  [L${i+1}] ${escapeHtml(o)}</div>`;
+        }
+      }
+      res.innerHTML = html || '<div style="color:var(--text-muted); padding:10px;">// No differences or empty input</div>';
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    document.getElementById('btn-diff-run')?.addEventListener('click', runDiff);
+    document.getElementById('btn-diff-swap')?.addEventListener('click', () => {
+      const tmp = orig.value;
+      orig.value = mod.value;
+      mod.value = tmp;
+      runDiff();
+    });
+    document.getElementById('btn-diff-clear')?.addEventListener('click', () => {
+      orig.value = '';
+      mod.value = '';
+      res.innerHTML = '// Differences will appear here';
+    });
+    orig.addEventListener('input', runDiff);
+    mod.addEventListener('input', runDiff);
+    if (!orig.value && !mod.value) {
+      orig.value = `function calculateTotal(price, tax) {\n  return price + tax;\n}`;
+      mod.value = `function calculateTotal(price, tax, discount = 0) {\n  return (price + tax) * (1 - discount);\n}`;
+    }
+    runDiff();
+  }
+
+  // ── markdown-table ───────────────────────────────────────────────────────────
+  else if (tool.id === 'markdown-table') {
+    const rowsIn = document.getElementById('tbl-rows');
+    const colsIn = document.getElementById('tbl-cols');
+    const inp    = document.getElementById('tbl-input');
+    const out    = document.getElementById('tbl-output');
+
+    function genTable() {
+      const text = inp.value.trim();
+      if (text) {
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+          const tableRows = lines.map(l => l.split(',').map(c => c.trim()));
+          const maxCols = Math.max(...tableRows.map(r => r.length));
+          let md = '| ' + (tableRows[0] || []).concat(Array(Math.max(0, maxCols - tableRows[0].length)).fill('')).join(' | ') + ' |\n';
+          md += '| ' + Array(maxCols).fill('---').join(' | ') + ' |\n';
+          for (let i = 1; i < tableRows.length; i++) {
+            const r = tableRows[i];
+            md += '| ' + r.concat(Array(Math.max(0, maxCols - r.length)).fill('')).join(' | ') + ' |\n';
+          }
+          out.textContent = md;
+          return;
+        }
+      }
+      const r = parseInt(rowsIn.value, 10) || 3;
+      const c = parseInt(colsIn.value, 10) || 3;
+      let md = '| ' + Array(c).fill(0).map((_, i) => `Header ${i+1}`).join(' | ') + ' |\n';
+      md += '| ' + Array(c).fill('---').join(' | ') + ' |\n';
+      for (let i = 0; i < r - 1; i++) {
+        md += '| ' + Array(c).fill(0).map((_, j) => `Row ${i+1} Col ${j+1}`).join(' | ') + ' |\n';
+      }
+      out.textContent = md;
+    }
+
+    document.getElementById('btn-tbl-gen')?.addEventListener('click', genTable);
+    document.getElementById('btn-tbl-copy')?.addEventListener('click', () => copyText(out.textContent));
+    rowsIn?.addEventListener('input', genTable);
+    colsIn?.addEventListener('input', genTable);
+    inp?.addEventListener('input', genTable);
+    genTable();
+  }
+
+  // ── regex-tester ─────────────────────────────────────────────────────────────
+  else if (tool.id === 'regex-tester') {
+    const patIn = document.getElementById('regex-pattern');
+    const flgIn = document.getElementById('regex-flags');
+    const inp   = document.getElementById('regex-input');
+    const out   = document.getElementById('regex-output');
+    const cntEl = document.getElementById('regex-match-count');
+
+    function evalRegex() {
+      const p = patIn.value;
+      const f = flgIn.value;
+      const text = inp.value;
+      if (!p) {
+        out.innerHTML = escapeHtml(text);
+        if (cntEl) cntEl.textContent = '0 matches';
+        return;
+      }
+      try {
+        const re = new RegExp(p, f.includes('g') ? f : f + 'g');
+        let count = 0;
+        const highlighted = escapeHtml(text).replace(new RegExp(escapeRegex(p), f.includes('g') ? f : f + 'g'), match => {
+          count++;
+          return `<mark style="background:#0284c7; color:#fff; padding:1px 4px; border-radius:3px;">${match}</mark>`;
+        });
+        out.innerHTML = highlighted;
+        if (cntEl) cntEl.textContent = `${count} ${count === 1 ? 'match' : 'matches'}`;
+      } catch (e) {
+        out.innerHTML = `<span style="color:#ef4444;">Regex Error: ${e.message}</span>`;
+        if (cntEl) cntEl.textContent = 'Error';
+      }
+    }
+
+    function escapeHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function escapeRegex(s) { return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); }
+
+    patIn?.addEventListener('input', evalRegex);
+    flgIn?.addEventListener('input', evalRegex);
+    inp?.addEventListener('input', evalRegex);
+    document.getElementById('btn-regex-copy')?.addEventListener('click', () => copyText(out.textContent));
+    if (!patIn.value) {
+      patIn.value = '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}';
+      inp.value = 'Contact support at team@omnitool.dev or hello@freestack.dev for assistance.';
+    }
+    evalRegex();
+  }
+
+  // ── timestamp-conv ───────────────────────────────────────────────────────────
+  else if (tool.id === 'timestamp-conv') {
+    const liveEl = document.getElementById('ts-live');
+    const tsIn   = document.getElementById('ts-input');
+    const picker = document.getElementById('ts-picker');
+    const isoEl  = document.getElementById('ts-iso');
+    const utcEl  = document.getElementById('ts-utc');
+    const locEl  = document.getElementById('ts-local');
+    const relEl  = document.getElementById('ts-rel');
+
+    function updateLive() {
+      if (liveEl) liveEl.textContent = Math.floor(Date.now() / 1000).toString();
+    }
+    setInterval(updateLive, 1000);
+    updateLive();
+
+    function convertTs(val) {
+      let ms = parseInt(val, 10);
+      if (isNaN(ms)) return;
+      if (ms < 1e11) ms *= 1000; // convert seconds to ms
+      const d = new Date(ms);
+      if (isNaN(d.getTime())) return;
+      if (isoEl) isoEl.textContent = d.toISOString();
+      if (utcEl) utcEl.textContent = d.toUTCString();
+      if (locEl) locEl.textContent = d.toLocaleString();
+      const diffSecs = Math.round((Date.now() - d.getTime()) / 1000);
+      if (relEl) {
+        if (Math.abs(diffSecs) < 60) relEl.textContent = diffSecs >= 0 ? `${diffSecs}s ago` : `in ${-diffSecs}s`;
+        else if (Math.abs(diffSecs) < 3600) relEl.textContent = `${Math.round(diffSecs / 60)}m ago`;
+        else if (Math.abs(diffSecs) < 86400) relEl.textContent = `${Math.round(diffSecs / 3600)}h ago`;
+        else relEl.textContent = `${Math.round(diffSecs / 86400)}d ago`;
+      }
+    }
+
+    document.getElementById('btn-ts-now')?.addEventListener('click', () => {
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (tsIn) { tsIn.value = nowSec; convertTs(nowSec); }
+    });
+    tsIn?.addEventListener('input', () => convertTs(tsIn.value));
+    picker?.addEventListener('change', () => {
+      if (picker.value) {
+        const ms = new Date(picker.value).getTime();
+        const sec = Math.floor(ms / 1000);
+        if (tsIn) tsIn.value = sec;
+        convertTs(sec);
+      }
+    });
+    const initSec = Math.floor(Date.now() / 1000);
+    if (tsIn) tsIn.value = initSec;
+    convertTs(initSec);
+  }
+
+  // ── code-to-image ────────────────────────────────────────────────────────────
+  else if (tool.id === 'code-to-image') {
+    const themeSel = document.getElementById('card-theme');
+    const codeIn   = document.getElementById('card-code-input');
+    const cardEl   = document.getElementById('code-card-preview');
+    const dispEl   = document.getElementById('card-code-display');
+
+    function updateCard() {
+      if (dispEl) dispEl.textContent = codeIn.value;
+      const th = themeSel ? themeSel.value : 'gradient';
+      if (cardEl) {
+        if (th === 'gradient') cardEl.style.background = 'linear-gradient(135deg, #1e1b4b 0%, #3b82f6 100%)';
+        else if (th === 'dark') cardEl.style.background = '#0d1117';
+        else if (th === 'cyber') cardEl.style.background = 'linear-gradient(135deg, #050505 0%, #064e3b 100%)';
+        else if (th === 'sunset') cardEl.style.background = 'linear-gradient(135deg, #4c0519 0%, #f43f5e 100%)';
+      }
+    }
+
+    themeSel?.addEventListener('change', updateCard);
+    codeIn?.addEventListener('input', updateCard);
+    document.getElementById('btn-card-copy')?.addEventListener('click', () => {
+      copyText(codeIn.value);
+      showToast('Code copied to clipboard!');
+    });
+    updateCard();
+  }
+
+  // ── svg-optimizer ────────────────────────────────────────────────────────────
+  else if (tool.id === 'svg-optimizer') {
+    const inp = document.getElementById('svg-input');
+    const prev = document.getElementById('svg-preview');
+    const out = document.getElementById('svg-output');
+
+    function cleanSvg() {
+      let s = inp.value.trim();
+      if (!s) {
+        if (prev) prev.innerHTML = '';
+        if (out) out.textContent = '// Optimized SVG code will appear here';
+        return;
+      }
+      // Strip comments, extra whitespace, doctypes
+      s = s.replace(/<!--[\s\S]*?-->/g, '')
+           .replace(/<\?xml[\s\S]*?\?>/i, '')
+           .replace(/<!DOCTYPE[\s\S]*?>/i, '')
+           .replace(/\s+/g, ' ')
+           .replace(/> </g, '><')
+           .trim();
+      if (out) out.textContent = s;
+      if (prev) {
+        try { prev.innerHTML = s; } catch (e) { prev.innerHTML = '<span style="color:#ef4444;">Preview error</span>'; }
+      }
+    }
+
+    document.getElementById('btn-svg-clean')?.addEventListener('click', cleanSvg);
+    document.getElementById('btn-svg-sample')?.addEventListener('click', () => {
+      inp.value = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">\n  <!-- Generator: OmniTool Hub -->\n  <circle cx="50" cy="50" r="40" stroke="#06b6d4" stroke-width="4" fill="#0f172a" />\n  <path d="M35 50 L45 60 L65 40" stroke="#10b981" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>\n</svg>`;
+      cleanSvg();
+    });
+    document.getElementById('btn-svg-copy')?.addEventListener('click', () => copyText(out.textContent));
+    inp.addEventListener('input', cleanSvg);
+    cleanSvg();
+  }
+
+  // ── color-converter ──────────────────────────────────────────────────────────
+  else if (tool.id === 'color-converter') {
+    const picker = document.getElementById('col-picker');
+    const txtIn  = document.getElementById('col-input');
+    const swatch = document.getElementById('col-swatch');
+    const hexEl  = document.getElementById('col-hex');
+    const rgbEl  = document.getElementById('col-rgb');
+    const hslEl  = document.getElementById('col-hsl');
+    const harmEl = document.getElementById('col-harmonies');
+
+    function hexToRgb(hex) {
+      hex = hex.replace('#', '');
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+      const n = parseInt(hex, 16);
+      return isNaN(n) ? [6, 182, 212] : [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
+          case g: h = ((b - r) / d + 2); break;
+          case b: h = ((r - g) / d + 4); break;
+        }
+        h /= 6;
+      }
+      return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+    }
+
+    function updateColor(hex) {
+      if (!hex.startsWith('#')) hex = '#' + hex;
+      if (swatch) swatch.style.background = hex;
+      if (hexEl) hexEl.textContent = hex.toUpperCase();
+      const [r, g, b] = hexToRgb(hex);
+      if (rgbEl) rgbEl.textContent = `rgb(${r}, ${g}, ${b})`;
+      const [h, s, l] = rgbToHsl(r, g, b);
+      if (hslEl) hslEl.textContent = `hsl(${h}, ${s}%, ${l}%)`;
+      if (harmEl) {
+        const compH = (h + 180) % 360;
+        const tri1H = (h + 120) % 360;
+        const tri2H = (h + 240) % 360;
+        harmEl.innerHTML = `
+          <div style="display:flex; gap:10px; margin-top:6px;">
+            <div style="flex:1; height:32px; border-radius:6px; background:hsl(${compH}, ${s}%, ${l}%);" title="Complementary: hsl(${compH}, ${s}%, ${l}%)"></div>
+            <div style="flex:1; height:32px; border-radius:6px; background:hsl(${tri1H}, ${s}%, ${l}%);" title="Triadic 1"></div>
+            <div style="flex:1; height:32px; border-radius:6px; background:hsl(${tri2H}, ${s}%, ${l}%);" title="Triadic 2"></div>
+          </div>
+        `;
+      }
+    }
+
+    picker?.addEventListener('input', () => {
+      if (txtIn) txtIn.value = picker.value;
+      updateColor(picker.value);
+    });
+    txtIn?.addEventListener('input', () => {
+      if (/^#?[0-9A-Fa-f]{3,6}$/.test(txtIn.value)) {
+        const hx = txtIn.value.startsWith('#') ? txtIn.value : '#' + txtIn.value;
+        if (picker) picker.value = hx.length === 7 ? hx : picker.value;
+        updateColor(hx);
+      }
+    });
+    updateColor(picker?.value || '#06B6D4');
+  }
+
+  // ── css-glassmorphism ────────────────────────────────────────────────────────
+  else if (tool.id === 'css-glassmorphism') {
+    const blurIn = document.getElementById('glass-blur');
+    const blurVal = document.getElementById('glass-blur-val');
+    const opIn   = document.getElementById('glass-op');
+    const opVal  = document.getElementById('glass-op-val');
+    const borIn  = document.getElementById('glass-bor');
+    const borVal = document.getElementById('glass-bor-val');
+    const cardEl = document.getElementById('glass-card-preview');
+    const cssOut = document.getElementById('glass-css-output');
+
+    function updateGlass() {
+      const b = blurIn ? blurIn.value : 16;
+      const o = opIn ? opIn.value : 0.25;
+      const br = borIn ? borIn.value : 0.18;
+      if (blurVal) blurVal.textContent = `${b}px`;
+      if (opVal) opVal.textContent = `${Math.round(o * 100)}%`;
+      if (borVal) borVal.textContent = `${Math.round(br * 100)}%`;
+
+      const css = `background: rgba(255, 255, 255, ${o});\nbackdrop-filter: blur(${b}px);\n-webkit-backdrop-filter: blur(${b}px);\nborder-radius: 16px;\nborder: 1px solid rgba(255, 255, 255, ${br});\nbox-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);`;
+      if (cssOut) cssOut.textContent = css;
+      if (cardEl) {
+        cardEl.style.background = `rgba(255, 255, 255, ${o})`;
+        cardEl.style.backdropFilter = `blur(${b}px)`;
+        cardEl.style.webkitBackdropFilter = `blur(${b}px)`;
+        cardEl.style.border = `1px solid rgba(255, 255, 255, ${br})`;
+      }
+    }
+
+    blurIn?.addEventListener('input', updateGlass);
+    opIn?.addEventListener('input', updateGlass);
+    borIn?.addEventListener('input', updateGlass);
+    document.getElementById('btn-glass-copy')?.addEventListener('click', () => copyText(cssOut.textContent));
+    updateGlass();
+  }
+
+  // ── text-stats ───────────────────────────────────────────────────────────────
+  else if (tool.id === 'text-stats') {
+    const inp = document.getElementById('text-stats-input');
+    const wEl = document.getElementById('stat-words');
+    const cEl = document.getElementById('stat-chars');
+    const cnEl = document.getElementById('stat-chars-nospace');
+    const lEl = document.getElementById('stat-lines');
+    const rEl = document.getElementById('stat-reading');
+    const sEl = document.getElementById('stat-speaking');
+
+    function evalStats() {
+      const text = inp.value || '';
+      const words = (text.trim().match(/\S+/g) || []).length;
+      const chars = text.length;
+      const charsNoSpace = text.replace(/\s/g, '').length;
+      const lines = text ? text.split('\n').length : 0;
+      const readingMins = Math.ceil(words / 200) || 0;
+      const speakingMins = Math.ceil(words / 130) || 0;
+
+      if (wEl) wEl.textContent = words.toLocaleString();
+      if (cEl) cEl.textContent = chars.toLocaleString();
+      if (cnEl) cnEl.textContent = charsNoSpace.toLocaleString();
+      if (lEl) lEl.textContent = lines.toLocaleString();
+      if (rEl) rEl.textContent = `~${readingMins} min`;
+      if (sEl) sEl.textContent = `~${speakingMins} min`;
+    }
+
+    inp?.addEventListener('input', evalStats);
+    if (!inp.value) {
+      inp.value = "OmniTool Hub is an ultra-fast, privacy-first suite of 52+ developer and AI engineering utilities designed for high performance and offline safety.";
+    }
+    evalStats();
+  }
+
+  // ── prompt-interpolator ──────────────────────────────────────────────────────
+  else if (tool.id === 'prompt-interpolator') {
+    const tmplIn = document.getElementById('prompt-template');
+    const varsCont = document.getElementById('prompt-vars-container');
+    const out = document.getElementById('prompt-output');
+
+    function scanVars() {
+      const tmpl = tmplIn.value;
+      const matches = Array.from(new Set(tmpl.match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || []));
+      if (varsCont) {
+        varsCont.innerHTML = matches.map(m => {
+          const varName = m.replace(/[{}]/g, '');
+          return `
+            <div style="margin-bottom:8px;">
+              <label style="font-size:0.75rem; color:#93c5fd; font-weight:700;">{{${varName}}}</label>
+              <input class="form-input prompt-var-input" data-var="${varName}" placeholder="Value for ${varName}..." style="margin-top:2px;" />
+            </div>
+          `;
+        }).join('') || '<div style="color:var(--text-muted); font-size:0.85rem;">No {{variables}} found in template</div>';
+
+        varsCont.querySelectorAll('.prompt-var-input').forEach(input => {
+          input.addEventListener('input', renderPrompt);
+        });
+      }
+      renderPrompt();
+    }
+
+    function renderPrompt() {
+      let res = tmplIn.value;
+      if (varsCont) {
+        varsCont.querySelectorAll('.prompt-var-input').forEach(input => {
+          const v = input.getAttribute('data-var');
+          const val = input.value || `{{${v}}}`;
+          res = res.replaceAll(`{{${v}}}`, val);
+        });
+      }
+      if (out) out.textContent = res;
+    }
+
+    document.getElementById('btn-prompt-sub')?.addEventListener('click', renderPrompt);
+    document.getElementById('btn-prompt-sample')?.addEventListener('click', () => {
+      tmplIn.value = "You are a {{role}} specializing in {{tech_stack}}. Write a clean, production-ready module that implements {{feature}} with full error handling.";
+      scanVars();
+    });
+    document.getElementById('btn-prompt-copy')?.addEventListener('click', () => copyText(out.textContent));
+    tmplIn?.addEventListener('input', scanVars);
+    scanVars();
+  }
+
+  // ── batch-engine ─────────────────────────────────────────────────────────────
+  else if (tool.id === 'batch-engine') {
+    const fileIn = document.getElementById('batch-files');
+    fileIn?.addEventListener('change', () => {
+      const count = fileIn.files ? fileIn.files.length : 0;
+      showToast(`Selected ${count} files for Pro batch pipeline.`);
+    });
+  }
+
 }
+
+
 
 function runBatchDemo() {
   const p = document.getElementById('batch-demo-progress');
