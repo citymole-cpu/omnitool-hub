@@ -1661,6 +1661,58 @@ const STATE = {
 const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
+  {
+    id: 'jwt-expiry-calculator',
+    name: 'JWT Expiry & TTL Inspector',
+    desc: 'Analyze JWT payload timestamps and TTL countdown',
+    category: 'sec',
+    icon: '⏳',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>JWT Expiry & TTL Inspector</h2>
+    <p>可视化查看 JWT Token 的生成时间、生效时间、剩余存活时间与过期倒计时。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">输入 JWT Token</label>
+    <textarea class="textarea-code" id="jwt-ttl-input" rows="4" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
+  </div>
+  <button class="btn-action" onclick="calcJwtTtl()">⏱️ 分析存活与过期时间</button>
+  <div class="field-group" style="margin-top:16px;">
+    <label class="field-label">时间分析报告</label>
+    <div id="jwt-ttl-report" style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); font-family:var(--font-mono); font-size:0.9rem; line-height:1.8;">
+      等待输入 Token...
+    </div>
+  </div>
+</div>`
+  },
+  {
+    id: 'curl-to-fetch',
+    name: 'cURL to Code Converter',
+    desc: 'Convert cURL command to JS fetch, Python requests, or Axios snippets',
+    category: 'dev',
+    icon: '⚡',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>cURL to Code Converter</h2>
+    <p>将终端 cURL 命令快速转换为 JavaScript Fetch、Python Requests、Axios 或 Go http 代码。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">输入 cURL 命令行</label>
+    <textarea class="textarea-code" id="curl-input" rows="5" placeholder="curl -X POST https://api.example.com/data -H 'Content-Type: application/json' -d '{"hello":"world"}'"></textarea>
+  </div>
+  <div style="display:flex; gap:10px; margin:14px 0;">
+    <button class="btn-action active" onclick="convertCurl('fetch')">JS Fetch</button>
+    <button class="btn-action" onclick="convertCurl('python')">Python Requests</button>
+    <button class="btn-action" onclick="convertCurl('axios')">Axios</button>
+  </div>
+  <div class="field-group">
+    <label class="field-label">转换结果代码</label>
+    <textarea class="textarea-code" id="curl-output" rows="8" readonly></textarea>
+  </div>
+</div>`
+  },
   // 1. Code & Data
   { id: 'json-format', cat: 'Code & Data', icon: '{ }' },
   { id: 'json-csv', cat: 'Code & Data', icon: '⇄' },
@@ -5827,6 +5879,64 @@ function checkProStatus() {
     }
   }
 }
+
+
+
+// Autonomous synthesized tool logic: cURL 转 Fetch / Python / Axios
+
+window.convertCurl = function(targetLang) {
+  const input = (document.getElementById('curl-input') || {}).value || '';
+  if (!input.trim()) return;
+  
+  const urlMatch = input.match(/curl\s+(?:-X\s+\w+\s+)?['"]?([^'"\s]+)/i);
+  const url = urlMatch ? urlMatch[1] : 'https://api.example.com';
+  
+  const methodMatch = input.match(/-X\s+([A-Z]+)/i);
+  const method = methodMatch ? methodMatch[1].toUpperCase() : (input.includes('-d') ? 'POST' : 'GET');
+  
+  let out = '';
+  if (targetLang === 'fetch') {
+    out = `fetch('${url}', {\n  method: '${method}',\n  headers: {\n    'Content-Type': 'application/json'\n  }\n})\n.then(res => res.json())\n.then(console.log);`;
+  } else if (targetLang === 'python') {
+    out = `import requests\n\nurl = "${url}"\nheaders = {"Content-Type": "application/json"}\nresponse = requests.${method.lower()}(url, headers=headers)\nprint(response.json())`;
+  } else if (targetLang === 'axios') {
+    out = `const axios = require('axios');\n\naxios({\n  method: '${method.lower()}',\n  url: '${url}'\n}).then(response => {\n  console.log(response.data);\n});`;
+  }
+  const outElem = document.getElementById('curl-output');
+  if (outElem) outElem.value = out;
+};
+
+
+
+// Autonomous synthesized tool logic: JWT 过期时间与存活计算器
+
+window.calcJwtTtl = function() {
+  const token = (document.getElementById('jwt-ttl-input') || {}).value || '';
+  const parts = token.trim().split('.');
+  const report = document.getElementById('jwt-ttl-report');
+  if (parts.length < 2) {
+    if (report) report.innerHTML = '<span style="color:#ef4444;">❌ 无效的 JWT 格式（需包含 Header.Payload）</span>';
+    return;
+  }
+  try {
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    let html = '';
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.iat) {
+      html += `<div>📅 <strong>签发时间 (iat):</strong> ${new Date(payload.iat * 1000).toLocaleString()} (${payload.iat})</div>`;
+    }
+    if (payload.exp) {
+      const diff = payload.exp - now;
+      const isExpired = diff <= 0;
+      const statusColor = isExpired ? '#ef4444' : '#10b981';
+      const statusText = isExpired ? `⚠️ 已过期 ${Math.abs(diff)} 秒前` : `✅ 有效 (剩余 ${Math.floor(diff/60)} 分 ${diff%60} 秒)`;
+      html += `<div>⏳ <strong>过期时间 (exp):</strong> ${new Date(payload.exp * 1000).toLocaleString()} (<span style="color:${statusColor}; font-weight:bold;">${statusText}</span>)</div>`;
+    }
+    if (report) report.innerHTML = html || 'Payload 中未包含 iat 或 exp 字段';
+  } catch(e) {
+    if (report) report.innerHTML = `<span style="color:#ef4444;">❌ 解析失败: ${e.message}</span>`;
+  }
+};
 
 
 </script>
