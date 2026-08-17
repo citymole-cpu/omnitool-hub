@@ -990,8 +990,84 @@ html, body {
   text-overflow: ellipsis;
 }
 
+/* Synthesized & Injected Tool Styles */
+.tool-pane {
+  padding: 8px 4px;
+}
+.tool-header {
+  margin-bottom: 20px;
+}
+.tool-header h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+.tool-header p {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.field-group {
+  margin-bottom: 16px;
+}
+.field-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.textarea-code {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  padding: 12px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.textarea-code:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+.btn-action {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-action:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-cyan);
+}
+.btn-action.active {
+  background: var(--accent-cyan);
+  color: #000;
+  border-color: var(--accent-cyan);
+}
+
+
 
 </style>
+<!-- Cloudflare Web Analytics -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "e18fee5883c0496981f045ef037f563f"}'></script>
+<!-- End Cloudflare Web Analytics -->
+<script>
+// Page-level visit tracker
+try {
+  const apiHost = location.hostname.includes('pages.dev') ? '' : 'https://free-stack.pages.dev';
+  navigator.sendBeacon(`${apiHost}/api/track`, JSON.stringify({page:'tools',tool:'_pageview'}));
+} catch(e) {}
+</script>
 </head>
 <body>
 
@@ -1662,10 +1738,234 @@ const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
   {
+    id: 'html-tag-stripper',
+    name: 'HTML Tag Stripper & Text Extractor',
+    desc: 'Strip all HTML markup, scripts, and CSS styles to extract clean plain text',
+    cat: 'Code & Data',
+    icon: '🧹',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>HTML Tag Stripper & Text Extractor · 标签剥离清洗器</h2>
+    <p>从网页富文本、邮件或 CMS 内容中剔除所有 HTML 标签、脚本代码与样式，仅保留干净的纯文本内容。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">输入带标签的 HTML 内容</label>
+    <textarea class="textarea-code" id="html-strip-input" rows="6" placeholder="<div class='card'><h2>标题</h2><p>正文段落<a href='#'>链接</a></p></div>"></textarea>
+  </div>
+  <div style="margin: 12px 0;">
+    <button class="btn-action active" onclick="stripHtmlTags()">🧹 一键剥离所有 HTML 标签</button>
+  </div>
+  <div class="field-group">
+    <label class="field-label">清洗后的纯文本结果</label>
+    <textarea class="textarea-code" id="html-strip-output" rows="6" readonly></textarea>
+  </div>
+</div>`
+  },
+  {
+    id: 'rem-px-unit-converter',
+    name: 'CSS REM/EM to PX Converter',
+    desc: 'Convert pixels to rem/em based on root font size with live reference scale table',
+    cat: 'Design & Media',
+    icon: '📐',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>CSS REM / EM ⇄ PX Converter · 像素与相对单位转换</h2>
+    <p>前端响应式排版必备：根据根元素字体基准（默认 16px），实时双向换算 PX 与 REM/EM，并提供常用阶梯速查对照表。</p>
+  </div>
+  <div style="display:flex; gap:16px; align-items:center; margin-bottom:20px; flex-wrap:wrap;">
+    <label style="font-weight:600;">根元素基准 Base Font (px)：</label>
+    <input type="number" id="rem-base" class="form-input" value="16" style="width:100px;" oninput="calcRemPx()" />
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border);">
+      <label style="font-weight:600; display:block; margin-bottom:8px;">输入 PX 像素值</label>
+      <input type="number" id="px-val" class="form-input" value="24" oninput="calcFromPx()" />
+      <div style="margin-top:12px; font-size:1.2rem; font-weight:bold; color:var(--accent);" id="res-rem">= 1.5 rem</div>
+    </div>
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border);">
+      <label style="font-weight:600; display:block; margin-bottom:8px;">输入 REM / EM 值</label>
+      <input type="number" step="0.125" id="rem-val" class="form-input" value="1.5" oninput="calcFromRem()" />
+      <div style="margin-top:12px; font-size:1.2rem; font-weight:bold; color:#34d399;" id="res-px">= 24 px</div>
+    </div>
+  </div>
+</div>`
+  },
+  {
+    id: 'nato-phonetic-speller',
+    name: 'NATO Phonetic Alphabet Speller',
+    desc: 'Convert words and passwords into NATO ICAO phonetic spellings for unambiguous verbal communication',
+    cat: 'DevOps & Network',
+    icon: '📻',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>NATO Phonetic Alphabet Speller · 北约字母拼读器</h2>
+    <p>将复杂的服务器密码、邮箱或序列号一键转换为标准的北约无线电拼读字母（如 A->Alfa, B->Bravo），电话或语音沟通零歧义。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">输入待拼读文本或密码</label>
+    <input class="form-input" id="nato-input" value="OmniTool-2026" placeholder="输入任意文本或密码..." oninput="spellNato()" />
+  </div>
+  <div class="field-group" style="margin-top:16px;">
+    <label class="field-label">北约拼读字母对照 (NATO ICAO Phonetics)</label>
+    <div id="nato-output" style="display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border);">
+      <!-- Spelled words injected here -->
+    </div>
+  </div>
+</div>`
+  },
+  {
+    id: 'chmod-permissions-calculator',
+    name: 'Chmod Permissions Visual Calculator',
+    desc: 'Interactive checkbox matrix to calculate octal 755/644 chmod numbers and symbol strings',
+    cat: 'DevOps & Network',
+    icon: '🔒',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Chmod Permissions Visual Calculator · Linux 权限速算器</h2>
+    <p>通过直观的可视化勾选矩阵，快速换算 Linux 文件权限的八进制数字（如 755、644、777）与字符形式（如 rwxr-xr-x）。</p>
+  </div>
+  
+  <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin:20px 0; background:var(--bg-pane); padding:18px; border-radius:10px; border:1px solid var(--border);">
+    <div style="border-right:1px solid rgba(255,255,255,0.08); padding-right:12px;">
+      <h3 style="font-size:0.95rem; color:var(--accent); margin-bottom:10px;">👤 所有者 (Owner / User)</h3>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="u-r" checked onchange="updateChmod()"> 读取 Read (4)</label>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="u-w" checked onchange="updateChmod()"> 写入 Write (2)</label>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="u-x" checked onchange="updateChmod()"> 执行 Execute (1)</label>
+    </div>
+    <div style="border-right:1px solid rgba(255,255,255,0.08); padding-right:12px;">
+      <h3 style="font-size:0.95rem; color:#c084fc; margin-bottom:10px;">👥 用户组 (Group)</h3>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="g-r" checked onchange="updateChmod()"> 读取 Read (4)</label>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="g-w" onchange="updateChmod()"> 写入 Write (2)</label>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="g-x" checked onchange="updateChmod()"> 执行 Execute (1)</label>
+    </div>
+    <div>
+      <h3 style="font-size:0.95rem; color:#34d399; margin-bottom:10px;">🌍 公共其他 (Public / Others)</h3>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="o-r" checked onchange="updateChmod()"> 读取 Read (4)</label>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="o-w" onchange="updateChmod()"> 写入 Write (2)</label>
+      <label style="display:block; margin:6px 0;"><input type="checkbox" id="o-x" checked onchange="updateChmod()"> 执行 Execute (1)</label>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">八进制权限值 (Octal)</div>
+      <div id="chmod-octal" style="font-size:2.4rem; font-weight:900; color:var(--accent); font-family:var(--font-mono); margin:6px 0;">755</div>
+      <code id="chmod-cmd" style="font-size:0.85rem; color:var(--accent-cyan);">chmod 755 filename</code>
+    </div>
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">字符权限表示 (Symbolic)</div>
+      <div id="chmod-symbol" style="font-size:2.4rem; font-weight:900; color:#34d399; font-family:var(--font-mono); margin:6px 0;">-rwxr-xr-x</div>
+      <code id="chmod-u-cmd" style="font-size:0.85rem; color:var(--text-muted);">u=rwx,g=rx,o=rx</code>
+    </div>
+  </div>
+</div>`
+  },
+  {
+    id: 'docker-compose-converter',
+    name: 'Docker Run to Compose Converter',
+    desc: 'Convert docker run commands with ports, volumes and envs into clean docker-compose.yml',
+    cat: 'DevOps & Network',
+    icon: '🐳',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Docker Run to Docker Compose Converter</h2>
+    <p>将长串的 <code>docker run</code> 命令行一键转换为结构化的 <code>docker-compose.yml</code> 配置文件，便于生产编排与代码版本维护。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">输入 docker run 命令</label>
+    <textarea class="textarea-code" id="dockerrun-input" rows="4" placeholder="docker run -d --name redis-server -p 6379:6379 -v /data/redis:/data -e REDIS_PASSWORD=secret --restart always redis:7-alpine"></textarea>
+  </div>
+  <div style="margin: 12px 0;">
+    <button class="btn-action active" onclick="convertDockerRunToCompose()">⚡ 立即转换为 docker-compose.yml</button>
+    <button class="btn-action" onclick="loadSampleDockerRun()">加载样例</button>
+  </div>
+  <div class="field-group">
+    <label class="field-label">转换结果 (docker-compose.yml)</label>
+    <textarea class="textarea-code" id="dockercompose-output" rows="12" readonly></textarea>
+  </div>
+</div>`
+  },
+  {
+    id: 'address-persona-generator',
+    name: 'Fake Address & Persona Generator',
+    desc: 'Generate realistic mock addresses for US, UK, HK, SG with zip codes for form testing',
+    cat: 'Code & Data',
+    icon: '📍',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Fake Address & Persona Generator · 随机测试地址生成器</h2>
+    <p>快速生成符合真实格式的美国、英国、中国香港、新加坡等地区的测试地址，包含街道、门牌、城市、州/省、邮编与虚拟姓名。</p>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
+    <label style="font-weight:600; font-size:0.9rem;">目标国家/地区：</label>
+    <select id="addr-country" class="form-input" style="width:auto; padding:6px 12px;">
+      <option value="us">🇺🇸 美国 (United States)</option>
+      <option value="uk">🇬🇧 英国 (United Kingdom)</option>
+      <option value="hk">🇭🇰 中国香港 (Hong Kong)</option>
+      <option value="sg">🇸🇬 新加坡 (Singapore)</option>
+      <option value="ca">🇨🇦 加拿大 (Canada)</option>
+    </select>
+    <label style="font-weight:600; font-size:0.9rem; margin-left:10px;">生成数量：</label>
+    <select id="addr-count" class="form-input" style="width:auto; padding:6px 12px;">
+      <option value="1">1 条</option>
+      <option value="3" selected>3 条</option>
+      <option value="5">5 条</option>
+      <option value="10">10 条</option>
+    </select>
+    <button class="btn-action active" onclick="generateFakeAddresses()">🎲 随机生成地址</button>
+    <button class="btn-action" onclick="copyFakeAddresses()">📋 复制 JSON</button>
+  </div>
+  <div id="addr-output-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px;">
+    <!-- Generated Cards Injected Here -->
+  </div>
+</div>`
+  },
+  {
+    id: 'ai-token-counter',
+    name: 'AI Token Counter & Cost Calculator',
+    desc: 'Accurate token estimator and API cost calculator for GPT-4o, Claude & Gemini',
+    cat: 'AI Engineering',
+    icon: '🔢',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>AI Token Counter & Cost Calculator</h2>
+    <p>纯浏览器本地计算多模型（GPT-4o、Claude 3.5、Gemini 1.5）Token 数量，并在发送前预估 API 花费，防止天价账单。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">输入 Prompt / System Instructions</label>
+    <textarea class="textarea-code" id="token-input" rows="6" placeholder="输入提示词或粘贴待调用的代码/JSON数据..."></textarea>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:16px 0;">
+    <div style="background:var(--bg-pane); padding:14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">GPT-4o / GPT-4o-mini</div>
+      <div id="gpt-token-count" style="font-size:1.6rem; font-weight:bold; color:var(--accent); font-family:var(--font-mono); margin-top:4px;">0 tokens</div>
+      <div id="gpt-cost-est" style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">预计花费: $0.0000</div>
+    </div>
+    <div style="background:var(--bg-pane); padding:14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">Claude 3.5 Sonnet / Opus</div>
+      <div id="claude-token-count" style="font-size:1.6rem; font-weight:bold; color:#c084fc; font-family:var(--font-mono); margin-top:4px;">0 tokens</div>
+      <div id="claude-cost-est" style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">预计花费: $0.0000</div>
+    </div>
+    <div style="background:var(--bg-pane); padding:14px; border-radius:8px; border:1px solid var(--border);">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">Gemini 1.5 Pro / Flash</div>
+      <div id="gemini-token-count" style="font-size:1.6rem; font-weight:bold; color:#34d399; font-family:var(--font-mono); margin-top:4px;">0 tokens</div>
+      <div id="gemini-cost-est" style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">预计花费: $0.0000</div>
+    </div>
+  </div>
+</div>`
+  },
+  {
     id: 'jwt-expiry-calculator',
     name: 'JWT Expiry & TTL Inspector',
     desc: 'Analyze JWT payload timestamps and TTL countdown',
-    category: 'sec',
+    cat: 'Security & Auth',
     icon: '⏳',
     badge: 'NEW',
     render: () => `<div class="tool-pane">
@@ -1690,7 +1990,7 @@ const TOOLS = [
     id: 'curl-to-fetch',
     name: 'cURL to Code Converter',
     desc: 'Convert cURL command to JS fetch, Python requests, or Axios snippets',
-    category: 'dev',
+    cat: 'DevOps & Network',
     icon: '⚡',
     badge: 'NEW',
     render: () => `<div class="tool-pane">
@@ -1957,8 +2257,9 @@ function renderCategoryPills() {
   if (!c) return;
   const isZh = STATE.lang === 'zh';
   const cats = ['all', ...new Set(TOOLS.map(t => t.cat))];
+  const totalTools = TOOLS.length;
   const labels = {
-    'all': isZh ? '全部 (52)' : 'All (52)',
+    'all': isZh ? `全部 (${totalTools})` : `All (${totalTools})`,
     'Code & Data': isZh ? '📦 数据' : 'Code',
     'Security & Auth': isZh ? '🛡️ 安全' : 'Auth',
     'DevOps & Network': isZh ? '🌐 运维' : 'DevOps',
@@ -2220,6 +2521,12 @@ function switchTool(id) {
   const tool = TOOLS.find(t => t.id === id);
   if (!tool) return;
 
+  // 🔐 Private analytics tracking (fire-and-forget, no user data)
+  try {
+    const apiHost = location.hostname.includes('pages.dev') ? '' : 'https://free-stack.pages.dev';
+    navigator.sendBeacon(`${apiHost}/api/track`, JSON.stringify({ page: 'tools', tool: id }));
+  } catch(e) {}
+
   document.querySelectorAll('.tool-item').forEach(el => {
     const isActive = el.dataset.id === id;
     el.classList.toggle('active', isActive);
@@ -2263,6 +2570,9 @@ function copyText(str) {
 // Tool HTML Builders (All 52 Tools with dynamic i18n)
 // ----------------------------------------------------
 function getToolHTML(tool) {
+  if (typeof tool.render === 'function') {
+    return tool.render();
+  }
   const L = STATE.lang;
   const isZh = L === 'zh', isJa = L === 'ja';
 
@@ -3269,20 +3579,50 @@ JWT_SECRET=super_secret_signing_key_2026</textarea>
 
     case 'color-converter':
       return `
-        <div class="controls-bar">
-          <input type="color" id="col-picker" value="#3b82f6" style="width:40px; height:34px; border:none; cursor:pointer; background:transparent;" />
-          <input class="form-input" id="col-input" value="#3b82f6" style="width:140px;" />
-          <div id="col-swatch" style="width:34px; height:34px; border-radius:6px; background:#3b82f6; border:1px solid #fff;"></div>
+        <div class="controls-bar" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <input type="color" id="col-picker" value="#06b6d4" style="width:44px; height:38px; border:none; cursor:pointer; background:transparent; padding:0;" />
+          <input class="form-input" id="col-input" value="#06b6d4" placeholder="#06b6d4" style="width:140px; font-family:var(--font-mono); font-weight:700; text-transform:uppercase;" />
+          <div id="col-swatch" style="width:38px; height:38px; border-radius:8px; background:#06b6d4; border:2px solid rgba(255,255,255,0.2); box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+          <div style="display:flex; gap:6px; margin-left:auto;">
+            <button class="btn-sm" onclick="setPresetColor('#3b82f6')">🔵 Blue</button>
+            <button class="btn-sm" onclick="setPresetColor('#10b981')">🟢 Emerald</button>
+            <button class="btn-sm" onclick="setPresetColor('#ec4899')">🌸 Pink</button>
+            <button class="btn-sm" onclick="setPresetColor('#f59e0b')">🟠 Amber</button>
+            <button class="btn-sm" onclick="setPresetColor('#8b5cf6')">🟣 Purple</button>
+          </div>
         </div>
         <div class="dual-pane">
-          <div class="pane-box" style="padding:20px; gap:14px; background:var(--bg-input);">
-            <div><span style="font-size:0.75rem; color:var(--text-muted);">HEX</span><pre class="code-output" id="col-hex" style="padding:8px;">#3b82f6</pre></div>
-            <div><span style="font-size:0.75rem; color:var(--text-muted);">RGB</span><pre class="code-output" id="col-rgb" style="padding:8px;">rgb(59, 130, 246)</pre></div>
-            <div><span style="font-size:0.75rem; color:var(--text-muted);">HSL</span><pre class="code-output" id="col-hsl" style="padding:8px;">hsl(217, 91%, 60%)</pre></div>
+          <div class="pane-box" style="padding:22px; gap:16px; background:var(--bg-input);">
+            <h4 style="color:var(--accent-cyan); margin:0 0 4px;">${isZh ? '颜色代码换算 (Color Values)' : 'Color Formats'}</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block;">HEX / CSS</span>
+                <span id="col-hex" style="font-family:var(--font-mono); font-weight:700; font-size:1.1rem; color:#38bdf8;">#06B6D4</span>
+              </div>
+              <button class="btn-sm" onclick="copyText(document.getElementById('col-hex').textContent)">Copy</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block;">RGB</span>
+                <span id="col-rgb" style="font-family:var(--font-mono); font-weight:700; font-size:1.05rem; color:#34d399;">rgb(6, 182, 212)</span>
+              </div>
+              <button class="btn-sm" onclick="copyText(document.getElementById('col-rgb').textContent)">Copy</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+              <div>
+                <span style="font-size:0.75rem; color:var(--text-muted); display:block;">HSL</span>
+                <span id="col-hsl" style="font-family:var(--font-mono); font-weight:700; font-size:1.05rem; color:#fbbf24;">hsl(189, 95%, 43%)</span>
+              </div>
+              <button class="btn-sm" onclick="copyText(document.getElementById('col-hsl').textContent)">Copy</button>
+            </div>
           </div>
-          <div class="pane-box" style="padding:20px; gap:12px;">
-            <h4 style="color:#93c5fd; margin:0;">${isZh ? '推荐搭配色板' : 'Harmonious Color Palette'}</h4>
-            <div id="col-harmonies" style="display:flex; gap:10px; margin-top:10px;"></div>
+          <div class="pane-box" style="padding:22px; gap:14px;">
+            <h4 style="color:#93c5fd; margin:0;">${isZh ? '推荐搭配色板 & 对比度 (Harmonies)' : 'Harmonious Color Palette'}</h4>
+            <div id="col-harmonies" style="margin-top:6px;"></div>
+            <div style="margin-top:10px; background:var(--bg-input); padding:12px; border-radius:8px; border:1px solid var(--border);">
+              <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">${isZh ? '文本可读性对比度测试 (WCAG AA)' : 'Contrast Ratio Preview'}</span>
+              <div id="col-contrast-preview" style="padding:10px; border-radius:6px; text-align:center; font-weight:700;">Sample Text on Color Background</div>
+            </div>
           </div>
         </div>
       `;
@@ -5444,6 +5784,13 @@ MQ==
     const rgbEl  = document.getElementById('col-rgb');
     const hslEl  = document.getElementById('col-hsl');
     const harmEl = document.getElementById('col-harmonies');
+    const preview = document.getElementById('col-contrast-preview');
+
+    window.setPresetColor = function(hex) {
+      if (picker) picker.value = hex;
+      if (txtIn) txtIn.value = hex;
+      updateColor(hex);
+    };
 
     function hexToRgb(hex) {
       hex = hex.replace('#', '');
@@ -5469,6 +5816,17 @@ MQ==
       return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
     }
 
+    function hslToHex(h, s, l) {
+      l /= 100;
+      const a = s * Math.min(l, 1 - l) / 100;
+      const f = n => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color).toString(16).padStart(2, '0');
+      };
+      return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+    }
+
     function updateColor(hex) {
       if (!hex.startsWith('#')) hex = '#' + hex;
       if (swatch) swatch.style.background = hex;
@@ -5481,13 +5839,36 @@ MQ==
         const compH = (h + 180) % 360;
         const tri1H = (h + 120) % 360;
         const tri2H = (h + 240) % 360;
-        harmEl.innerHTML = `
-          <div style="display:flex; gap:10px; margin-top:6px;">
-            <div style="flex:1; height:32px; border-radius:6px; background:hsl(${compH}, ${s}%, ${l}%);" title="Complementary: hsl(${compH}, ${s}%, ${l}%)"></div>
-            <div style="flex:1; height:32px; border-radius:6px; background:hsl(${tri1H}, ${s}%, ${l}%);" title="Triadic 1"></div>
-            <div style="flex:1; height:32px; border-radius:6px; background:hsl(${tri2H}, ${s}%, ${l}%);" title="Triadic 2"></div>
+
+        const compHex = hslToHex(compH, s, l);
+        const tri1Hex = hslToHex(tri1H, s, l);
+        const tri2Hex = hslToHex(tri2H, s, l);
+
+        const isZh = STATE.lang === 'zh';
+
+        const renderHarmCard = (title, hCode, hHex) => `
+          <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+            <div style="height:36px; border-radius:6px; background:${hHex}; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); cursor:pointer; border:1px solid rgba(255,255,255,0.15);" onclick="setPresetColor('${hHex}')" title="点击应用此颜色">${title}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <code style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; color:var(--text-main);">${hHex}</code>
+              <button class="btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="copyText('${hHex}')">${isZh ? '复制' : 'Copy'}</button>
+            </div>
           </div>
         `;
+
+        harmEl.innerHTML = `
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:8px;">
+            ${renderHarmCard(isZh ? '互补色 (180°)' : 'Complementary', compH, compHex)}
+            ${renderHarmCard(isZh ? '三元色 A (+120°)' : 'Triadic 1', tri1H, tri1Hex)}
+            ${renderHarmCard(isZh ? '三元色 B (+240°)' : 'Triadic 2', tri2H, tri2Hex)}
+          </div>
+        `;
+      }
+      if (preview) {
+        preview.style.background = hex;
+        // YIQ luminance contrast
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        preview.style.color = (yiq >= 128) ? '#000000' : '#ffffff';
       }
     }
 
@@ -5936,6 +6317,349 @@ window.calcJwtTtl = function() {
   } catch(e) {
     if (report) report.innerHTML = `<span style="color:#ef4444;">❌ 解析失败: ${e.message}</span>`;
   }
+};
+
+
+
+// Autonomous synthesized tool logic: AI Token 计数与成本预估器
+
+window.initTokenCounter = function() {
+  const input = document.getElementById('token-input');
+  if (!input) return;
+  
+  function update() {
+    const text = input.value || '';
+    const charCount = text.length;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    
+    // GPT-4o (cl100k estimate ~ 1 token / 4 chars for EN, ~ 1.5 tokens / char for CJK)
+    const cjkMatches = text.match(/[\u4e00-\u9fa5]/g) || [];
+    const nonCjkLen = charCount - cjkMatches.length;
+    const gptTokens = Math.ceil((nonCjkLen / 3.8) + (cjkMatches.length * 1.4));
+    
+    // Claude estimate (~ 1 token / 3.5 chars)
+    const claudeTokens = Math.ceil((nonCjkLen / 3.5) + (cjkMatches.length * 1.6));
+    
+    // Gemini estimate
+    const geminiTokens = Math.ceil((nonCjkLen / 4.0) + (cjkMatches.length * 1.3));
+    
+    const el1 = document.getElementById('gpt-token-count');
+    const el2 = document.getElementById('claude-token-count');
+    const el3 = document.getElementById('gemini-token-count');
+    
+    if (el1) el1.innerText = `${gptTokens.toLocaleString()} tokens`;
+    if (el2) el2.innerText = `${claudeTokens.toLocaleString()} tokens`;
+    if (el3) el3.innerText = `${geminiTokens.toLocaleString()} tokens`;
+    
+    const c1 = document.getElementById('gpt-cost-est');
+    const c2 = document.getElementById('claude-cost-est');
+    const c3 = document.getElementById('gemini-cost-est');
+    
+    if (c1) c1.innerText = `单次花费: $${((gptTokens / 1000000) * 2.50).toFixed(5)} (1k次: $${((gptTokens / 1000) * 0.0025).toFixed(2)})`;
+    if (c2) c2.innerText = `单次花费: $${((claudeTokens / 1000000) * 3.00).toFixed(5)} (1k次: $${((claudeTokens / 1000) * 0.003).toFixed(2)})`;
+    if (c3) c3.innerText = `单次花费: $${((geminiTokens / 1000000) * 1.25).toFixed(5)} (1k次: $${((geminiTokens / 1000) * 0.00125).toFixed(2)})`;
+  }
+  
+  input.addEventListener('input', update);
+};
+setTimeout(window.initTokenCounter, 200);
+
+
+
+// Zeeklog Benchmark Tool: 随机多国测试地址与身份生成器
+
+window.generateFakeAddresses = function() {
+  const country = (document.getElementById('addr-country') || {}).value || 'us';
+  const count = parseInt((document.getElementById('addr-count') || {}).value || '3');
+  
+  const DB = {
+    us: {
+      streets: ['Market St', 'Broadway', 'Mission St', 'Sunset Blvd', 'Pine St', 'Maple Ave', 'Oakridge Dr', 'Lexington Ave'],
+      cities: [{city:'San Francisco', state:'CA', zip:'94103'}, {city:'New York', state:'NY', zip:'10001'}, {city:'Austin', state:'TX', zip:'78701'}, {city:'Seattle', state:'WA', zip:'98101'}],
+      firsts: ['James', 'Emma', 'Oliver', 'Sophia', 'Lucas', 'Mia'],
+      lasts: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller']
+    },
+    uk: {
+      streets: ['Oxford St', 'High St', 'Baker St', 'Abbey Rd', 'King Rd', 'Church Lane'],
+      cities: [{city:'London', state:'Greater London', zip:'W1D 1BS'}, {city:'Manchester', state:'Greater Manchester', zip:'M1 1AD'}, {city:'Edinburgh', state:'Scotland', zip:'EH1 1YZ'}],
+      firsts: ['George', 'Olivia', 'Harry', 'Amelia', 'Noah', 'Isla'],
+      lasts: ['Taylor', 'Davies', 'Wilson', 'Evans', 'Thomas', 'Roberts']
+    },
+    hk: {
+      streets: ['弥敦道 Nathan Rd', '皇后大道中 Queen\'s Rd Central', '轩尼诗道 Hennessy Rd', '德辅道中 Des Voeux Rd'],
+      cities: [{city:'中西区 Central', state:'香港岛 HK Island', zip:'999077'}, {city:'油尖旺 Yau Tsim Mong', state:'九龙 Kowloon', zip:'999077'}, {city:'湾仔 Wan Chai', state:'香港岛', zip:'999077'}],
+      firsts: ['Ka-ho', 'Wing-shan', 'Chun-kit', 'Lok-man', 'Tsz-hin'],
+      lasts: ['Chan (陈)', 'Lee (李)', 'Cheung (张)', 'Wong (黄)', 'Lau (刘)']
+    },
+    sg: {
+      streets: ['Orchard Rd', 'Marina Blvd', 'Tampines Ave', 'Jurong East St', 'Bedok North Ave'],
+      cities: [{city:'Singapore', state:'Central Region', zip:'018981'}, {city:'Singapore', state:'East Region', zip:'529538'}, {city:'Singapore', state:'West Region', zip:'609601'}],
+      firsts: ['Wei Jie', 'Zhi Hao', 'Mei Ling', 'Hui Xian', 'Jia Wei'],
+      lasts: ['Tan', 'Lim', 'Lee', 'Ng', 'Ong', 'Wong']
+    },
+    ca: {
+      streets: ['Yonge St', 'Robson St', 'Saint-Laurent Blvd', 'Jasper Ave', 'Bay St'],
+      cities: [{city:'Toronto', state:'ON', zip:'M5B 2H1'}, {city:'Vancouver', state:'BC', zip:'V6B 2G1'}, {city:'Montreal', state:'QC', zip:'H2X 1Y6'}],
+      firsts: ['Liam', 'Charlotte', 'Noah', 'Emma', 'William'],
+      lasts: ['Tremblay', 'Gagnon', 'Roy', 'Bouchard', 'Gauthier']
+    }
+  };
+
+  const pool = DB[country] || DB.us;
+  const results = [];
+  
+  for(let i=0; i<count; i++) {
+    const fn = pool.firsts[Math.floor(Math.random()*pool.firsts.length)];
+    const ln = pool.lasts[Math.floor(Math.random()*pool.lasts.length)];
+    const streetNum = Math.floor(Math.random()*8999) + 100;
+    const street = pool.streets[Math.floor(Math.random()*pool.streets.length)];
+    const loc = pool.cities[Math.floor(Math.random()*pool.cities.length)];
+    const phone = `+1 (${Math.floor(Math.random()*800)+200}) ${Math.floor(Math.random()*899)+100}-${Math.floor(Math.random()*8999)+1000}`;
+    
+    results.push({
+      fullName: `${fn} ${ln}`,
+      streetAddress: `${streetNum} ${street}`,
+      city: loc.city,
+      state: loc.state,
+      zipCode: loc.zip,
+      phone: phone,
+      country: country.toUpperCase()
+    });
+  }
+  
+  window._lastAddresses = results;
+  
+  const container = document.getElementById('addr-output-cards');
+  if(!container) return;
+  
+  container.innerHTML = results.map((r, idx) => `
+    <div style="background:var(--bg-pane); padding:16px; border-radius:10px; border:1px solid var(--border); box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+        <span style="font-weight:700; color:var(--accent); font-size:1.05rem;">👤 ${r.fullName}</span>
+        <span style="font-size:0.75rem; background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; font-family:var(--font-mono);">${r.country} #${idx+1}</span>
+      </div>
+      <div style="font-size:0.88rem; line-height:1.7; color:var(--text);">
+        <div><strong>🏠 街道：</strong>${r.streetAddress}</div>
+        <div><strong>🏙️ 城市/州：</strong>${r.city}, ${r.state}</div>
+        <div><strong>📮 邮编：</strong><code style="color:var(--accent-cyan); font-family:var(--font-mono);">${r.zipCode}</code></div>
+        <div><strong>📞 电话：</strong>${r.phone}</div>
+      </div>
+    </div>
+  `).join('');
+};
+
+window.copyFakeAddresses = function() {
+  if (!window._lastAddresses) return;
+  navigator.clipboard.writeText(JSON.stringify(window._lastAddresses, null, 2)).then(() => {
+    alert('已复制 JSON 地址数据到剪贴板！');
+  });
+};
+setTimeout(window.generateFakeAddresses, 200);
+
+
+
+// Zeeklog Benchmark Tool: Docker Run 转 Compose YAML
+
+window.loadSampleDockerRun = function() {
+  const inp = document.getElementById('dockerrun-input');
+  if(inp) {
+    inp.value = 'docker run -d --name my-postgres -p 5432:5432 -v pgdata:/var/lib/postgresql/data -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=securepass --restart unless-stopped postgres:16-alpine';
+    window.convertDockerRunToCompose();
+  }
+};
+
+window.convertDockerRunToCompose = function() {
+  const input = (document.getElementById('dockerrun-input') || {}).value || '';
+  if (!input.trim()) return;
+
+  const raw = input.replace(/\\\n/g, ' ').replace(/\s+/g, ' ');
+  
+  // Extract container name
+  const nameMatch = raw.match(/--name\s+([\w\-]+)/);
+  const serviceName = nameMatch ? nameMatch[1] : 'app';
+
+  // Extract restart policy
+  const restartMatch = raw.match(/--restart(?:=|\s+)([\w\-]+)/);
+  const restart = restartMatch ? restartMatch[1] : 'always';
+
+  // Extract ports (-p 8080:80)
+  const ports = [];
+  const portRegex = /(?:-p|--publish)(?:=|\s+)(['"]?[\w\.:\-]+['"]?)/g;
+  let m;
+  while ((m = portRegex.exec(raw)) !== null) {
+    ports.push(m[1].replace(/['"]/g, ''));
+  }
+
+  // Extract volumes (-v /host:/container)
+  const volumes = [];
+  const volRegex = /(?:-v|--volume)(?:=|\s+)(['"]?[^\s'"]+['"]?)/g;
+  while ((m = volRegex.exec(raw)) !== null) {
+    volumes.push(m[1].replace(/['"]/g, ''));
+  }
+
+  // Extract envs (-e KEY=VAL)
+  const envs = [];
+  const envRegex = /(?:-e|--env)(?:=|\s+)(['"]?[^\s'"]+['"]?)/g;
+  while ((m = envRegex.exec(raw)) !== null) {
+    envs.push(m[1].replace(/['"]/g, ''));
+  }
+
+  // Extract image (last token)
+  const tokens = raw.trim().split(' ');
+  const image = tokens[tokens.length - 1] || 'nginx:latest';
+
+  let yaml = `version: '3.8'\n\nservices:\n  ${serviceName}:\n    image: ${image}\n    container_name: ${serviceName}\n    restart: ${restart}\n`;
+
+  if (ports.length > 0) {
+    yaml += `    ports:\n`;
+    ports.forEach(p => yaml += `      - "${p}"\n`);
+  }
+
+  if (envs.length > 0) {
+    yaml += `    environment:\n`;
+    envs.forEach(e => yaml += `      - ${e}\n`);
+  }
+
+  if (volumes.length > 0) {
+    yaml += `    volumes:\n`;
+    volumes.forEach(v => yaml += `      - ${v}\n`);
+  }
+
+  const out = document.getElementById('dockercompose-output');
+  if(out) out.value = yaml;
+};
+setTimeout(window.loadSampleDockerRun, 200);
+
+
+
+// Zeeklog Benchmark Tool: Linux Chmod 权限与命令速算器
+
+window.updateChmod = function() {
+  const ur = document.getElementById('u-r')?.checked ? 4 : 0;
+  const uw = document.getElementById('u-w')?.checked ? 2 : 0;
+  const ux = document.getElementById('u-x')?.checked ? 1 : 0;
+  
+  const gr = document.getElementById('g-r')?.checked ? 4 : 0;
+  const gw = document.getElementById('g-w')?.checked ? 2 : 0;
+  const gx = document.getElementById('g-x')?.checked ? 1 : 0;
+  
+  const or_ = document.getElementById('o-r')?.checked ? 4 : 0;
+  const ow = document.getElementById('o-w')?.checked ? 2 : 0;
+  const ox = document.getElementById('o-x')?.checked ? 1 : 0;
+
+  const uVal = ur + uw + ux;
+  const gVal = gr + gw + gx;
+  const oVal = or_ + ow + ox;
+  
+  const octal = `${uVal}${gVal}${oVal}`;
+  
+  const sym = '-' +
+    (ur ? 'r' : '-') + (uw ? 'w' : '-') + (ux ? 'x' : '-') +
+    (gr ? 'r' : '-') + (gw ? 'w' : '-') + (gx ? 'x' : '-') +
+    (or_ ? 'r' : '-') + (ow ? 'w' : '-') + (ox ? 'x' : '-');
+
+  const elOctal = document.getElementById('chmod-octal');
+  const elCmd = document.getElementById('chmod-cmd');
+  const elSym = document.getElementById('chmod-symbol');
+  
+  if (elOctal) elOctal.innerText = octal;
+  if (elCmd) elCmd.innerText = `chmod ${octal} filename`;
+  if (elSym) elSym.innerText = sym;
+};
+setTimeout(window.updateChmod, 200);
+
+
+
+// Zeeklog Benchmark Tool: 北约音标字母表与无线电读音
+
+window.spellNato = function() {
+  const NATO = {
+    'A': 'Alfa', 'B': 'Bravo', 'C': 'Charlie', 'D': 'Delta', 'E': 'Echo',
+    'F': 'Foxtrot', 'G': 'Golf', 'H': 'Hotel', 'I': 'India', 'J': 'Juliett',
+    'K': 'Kilo', 'L': 'Lima', 'M': 'Mike', 'N': 'November', 'O': 'Oscar',
+    'P': 'Papa', 'Q': 'Quebec', 'R': 'Romeo', 'S': 'Sierra', 'T': 'Tango',
+    'U': 'Uniform', 'V': 'Victor', 'W': 'Whiskey', 'X': 'X-ray', 'Y': 'Yankee',
+    'Z': 'Zulu',
+    '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four',
+    '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine',
+    '-': '[Hyphen]', '_': '[Underscore]', '.': '[Dot]', '@': '[At]'
+  };
+
+  const text = (document.getElementById('nato-input') || {}).value || '';
+  const container = document.getElementById('nato-output');
+  if(!container) return;
+
+  const chars = text.toUpperCase().split('');
+  if (chars.length === 0) {
+    container.innerHTML = '<span style="color:var(--text-muted);">请输入待拼读字符...</span>';
+    return;
+  }
+
+  container.innerHTML = chars.map(c => {
+    const word = NATO[c] || c;
+    const isSpecial = !NATO[c];
+    return `
+      <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:6px 10px; text-align:center;">
+        <span style="font-size:1.1rem; font-weight:bold; color:var(--accent); font-family:var(--font-mono);">${c}</span>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${word}</div>
+      </div>
+    `;
+  }).join('');
+};
+setTimeout(window.spellNato, 200);
+
+
+
+// Zeeklog Benchmark Tool: CSS REM / EM ⇄ PX 互转计算器
+
+window.calcFromPx = function() {
+  const base = parseFloat((document.getElementById('rem-base') || {}).value || '16') || 16;
+  const px = parseFloat((document.getElementById('px-val') || {}).value || '0') || 0;
+  const rem = (px / base).toFixed(4).replace(/\.?0+$/, '');
+  const el = document.getElementById('res-rem');
+  if(el) el.innerText = `= ${rem} rem`;
+  const inpRem = document.getElementById('rem-val');
+  if(inpRem) inpRem.value = rem;
+};
+
+window.calcFromRem = function() {
+  const base = parseFloat((document.getElementById('rem-base') || {}).value || '16') || 16;
+  const rem = parseFloat((document.getElementById('rem-val') || {}).value || '0') || 0;
+  const px = (rem * base).toFixed(2).replace(/\.?0+$/, '');
+  const el = document.getElementById('res-px');
+  if(el) el.innerText = `= ${px} px`;
+  const inpPx = document.getElementById('px-val');
+  if(inpPx) inpPx.value = px;
+};
+
+window.calcRemPx = function() {
+  window.calcFromPx();
+};
+setTimeout(window.calcRemPx, 200);
+
+
+
+// Zeeklog Benchmark Tool: HTML 标签极速剥离与纯文本清洗
+
+window.stripHtmlTags = function() {
+  const inp = (document.getElementById('html-strip-input') || {}).value || '';
+  if(!inp) return;
+
+  // Remove script and style elements
+  let cleaned = inp.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  cleaned = cleaned.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+  
+  // Replace <br>, <p>, <div> with linebreaks
+  cleaned = cleaned.replace(/<(?:br|p|div|li|tr)[^>]*>/gi, '\n');
+  cleaned = cleaned.replace(/<[^>]+>/g, '');
+  
+  // Unescape common HTML entities
+  const txt = document.createElement('textarea');
+  txt.innerHTML = cleaned;
+  const decoded = txt.value.replace(/\n{3,}/g, '\n\n').trim();
+
+  const out = document.getElementById('html-strip-output');
+  if(out) out.value = decoded;
 };
 
 
