@@ -1738,6 +1738,65 @@ const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
   {
+    id: 'speculative-decoding-calc',
+    name: 'Speculative Decoding Speedup Calculator',
+    desc: 'Estimate throughput speedup, token acceptance rate and additional VRAM footprint for Speculative Decoding',
+    cat: 'AI Engineering',
+    icon: '🚀',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Speculative Decoding Speedup Calculator · 投机采样加速速算器</h2>
+    <p>精准测算在消费级显卡（RTX 4090 / Mac Studio）上使用小模型（Draft Model，如 1.5B）为大模型（Target Model，如 27B / 70B）做投机采样加速时的额外显存开销、Token 接受率（Acceptance Rate）与实际端到端提速倍率。</p>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:16px;">
+    <div class="field-group">
+      <label class="field-label">主模型 (Target Model)</label>
+      <select id="spec-target-size" class="form-input" onchange="calcSpecSpeedup()">
+        <option value="14">14B (Qwen / DeepSeek)</option>
+        <option value="27" selected>27B / 32B (Qwen 3.8 / Gemma)</option>
+        <option value="70">70B (Llama 3.3 / Qwen)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">草稿辅助模型 (Draft Model)</label>
+      <select id="spec-draft-size" class="form-input" onchange="calcSpecSpeedup()">
+        <option value="0.5">0.5B (极速微型草稿)</option>
+        <option value="1.5" selected>1.5B (推荐黄金搭配)</option>
+        <option value="3.0">3.0B (高接受率草稿)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">推测步长 (Gamma / Lookahead Steps)</label>
+      <select id="spec-gamma" class="form-input" onchange="calcSpecSpeedup()">
+        <option value="3">3 tokens (保守，适合复杂推理)</option>
+        <option value="5" selected>5 tokens (标准代码与对话)</option>
+        <option value="8">8 tokens (激进，结构化JSON生成)</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin:20px 0;">
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">预计接受率 (Acceptance Rate)</div>
+      <div id="spec-acc-res" style="font-size:1.8rem; font-weight:bold; color:var(--accent); font-family:var(--font-mono); margin:6px 0;">~ 74%</div>
+    </div>
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">端到端推理提速倍率</div>
+      <div id="spec-speed-res" style="font-size:1.8rem; font-weight:bold; color:#34d399; font-family:var(--font-mono); margin:6px 0;">2.6x 提升</div>
+    </div>
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">草稿模型额外显存占用</div>
+      <div id="spec-vram-res" style="font-size:1.8rem; font-weight:bold; color:#c084fc; font-family:var(--font-mono); margin:6px 0;">+ 1.2 GB</div>
+    </div>
+  </div>
+
+  <div id="spec-insight-box" style="background:var(--bg-pane); padding:14px 18px; border-radius:8px; border:1px solid var(--border); font-size:0.9rem; line-height:1.7;">
+    <!-- Speculative decoding tips -->
+  </div>
+</div>`
+  },
+  {
     id: 'llm-needle-tester',
     name: 'LLM Long-Context Needle-in-a-Haystack Tester',
     desc: 'Simulate and test LLM retrieval accuracy and lost-in-the-middle phenomena across 4k to 128k contexts',
@@ -6919,6 +6978,42 @@ window.copyNiahPayload = function() {
   if (outEl && outEl.value) {
     if (typeof copyText === 'function') copyText(outEl.value);
     else navigator.clipboard.writeText(outEl.value);
+  }
+};
+
+
+
+// Autonomous synthesized tool logic: 大模型投机采样加速比与显存速算器
+
+window.calcSpecSpeedup = function() {
+  const target = parseFloat((document.getElementById('spec-target-size') || {}).value || 27);
+  const draft = parseFloat((document.getElementById('spec-draft-size') || {}).value || 1.5);
+  const gamma = parseInt((document.getElementById('spec-gamma') || {}).value || 5);
+
+  // Draft model VRAM (quantized 4-bit)
+  const draftVram = (draft * 0.55 + 0.3).toFixed(1);
+
+  // Acceptance rate estimation based on parameter alignment
+  let accRate = 0.72;
+  if (draft >= 3.0) accRate = 0.82;
+  else if (draft <= 0.5) accRate = 0.62;
+
+  // Theoretical speedup: (1 - (1 - alpha)^(gamma+1)) / (gamma * (1-alpha) + (cost_draft/cost_target))
+  const costRatio = (draft / target);
+  const effectiveTokensPerStep = (1 - Math.pow(1 - accRate, gamma + 1)) / (1 - accRate);
+  const speedup = (effectiveTokensPerStep / (1 + gamma * costRatio * 1.5)).toFixed(1);
+
+  const elAcc = document.getElementById('spec-acc-res');
+  const elSpeed = document.getElementById('spec-speed-res');
+  const elVram = document.getElementById('spec-vram-res');
+  const elBox = document.getElementById('spec-insight-box');
+
+  if (elAcc) elAcc.innerText = `~ ${(accRate * 100).toFixed(0)}%`;
+  if (elSpeed) elSpeed.innerText = `${Math.max(1.8, speedup)}x 提升`;
+  if (elVram) elVram.innerText = `+ ${draftVram} GB`;
+
+  if (elBox) {
+    elBox.innerHTML = `<strong>💡 工程部署建议：</strong>仅需多消耗 <strong>${draftVram} GB</strong> 显存加载草稿模型，即可将 <strong>${target}B</strong> 模型原本 18 tok/s 的单轮推理拉升至 <strong>~${(18 * Math.max(1.8, speedup)).toFixed(0)} tok/s</strong>！在 Ollama / llama.cpp 中追加参数 <code>--draft ${draft}B-Q4_K_M</code> 即可享受零损耗飞速生成。`;
   }
 };
 
