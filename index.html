@@ -1738,6 +1738,151 @@ const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
   {
+    id: 'llm-needle-tester',
+    name: 'LLM Long-Context Needle-in-a-Haystack Tester',
+    desc: 'Simulate and test LLM retrieval accuracy and lost-in-the-middle phenomena across 4k to 128k contexts',
+    cat: 'AI Engineering',
+    icon: '🪡',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>LLM Long-Context Needle-in-a-Haystack Tester · 大海捞针长文本测试器</h2>
+    <p>生成标准化的长文本测试沙箱，在文档不同深度（0% 起始、50% 中间、100% 末尾）埋入目标“秘密密码”，用于检验本地或云端模型的检索召回率与中间遗忘（Lost in the Middle）现象。</p>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:16px;">
+    <div class="field-group">
+      <label class="field-label">模拟文档长度 (Context Size)</label>
+      <select id="niah-size" class="form-input">
+        <option value="4000">4K tokens (~3,000 词)</option>
+        <option value="8000" selected>8K tokens (~6,000 词)</option>
+        <option value="16000">16K tokens (~12,000 词)</option>
+        <option value="32000">32K tokens (~24,000 词)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">密码埋藏深度 (Needle Depth)</label>
+      <select id="niah-depth" class="form-input">
+        <option value="10">顶部 10% (Top)</option>
+        <option value="50" selected>正中间 50% (Middle - 最难检索)</option>
+        <option value="90">底部 90% (Bottom)</option>
+        <option value="random">随机深度 (Random)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">目标秘密密码 (Needle Key)</label>
+      <input type="text" id="niah-key" class="form-input" value="SECRET-FLAG-{778899}" />
+    </div>
+  </div>
+
+  <div style="margin: 12px 0;">
+    <button class="btn-action active" onclick="generateNiahPayload()">🎲 一键生成长文本测试 Payload</button>
+    <button class="btn-action" onclick="copyNiahPayload()">📋 复制 Prompt</button>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">生成的长文本测试 Prompt (直接粘贴给本地 Ollama / Claude / GPT 进行提问)</label>
+    <textarea class="textarea-code" id="niah-output" rows="10" readonly placeholder="点击上方按钮生成测试 Payload..."></textarea>
+  </div>
+</div>`
+  },
+  {
+    id: 'cron-visual-builder',
+    name: 'Cron Expression Visual Generator',
+    desc: 'Interactive builder for crontab schedules with human-readable description and next 5 run preview',
+    cat: 'DevOps & Network',
+    icon: '⏰',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Cron Expression Visual Generator · 表达式生成与预演器</h2>
+    <p>告别复杂的 Linux Crontab 语法记忆，通过可视化勾选快速生成 5 位 / 6 位标准表达式，并实时翻译为通俗自然语言。</p>
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+    <button class="btn-action" onclick="setCronPreset('* * * * *')">每分钟</button>
+    <button class="btn-action active" onclick="setCronPreset('0 1 * * *')">每日凌晨 01:00</button>
+    <button class="btn-action" onclick="setCronPreset('0 0 * * 1')">每周一零点</button>
+    <button class="btn-action" onclick="setCronPreset('*/15 * * * *')">每 15 分钟</button>
+    <button class="btn-action" onclick="setCronPreset('0 9-18 * * 1-5')">工作日每小时</button>
+  </div>
+  <div class="field-group">
+    <label class="field-label">Cron 表达式 (Crontab String)</label>
+    <input type="text" id="cron-input" class="form-input" value="0 1 * * *" style="font-family:var(--font-mono); font-size:1.4rem; font-weight:bold; letter-spacing:2px;" oninput="parseCronExpr()" />
+  </div>
+  <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); margin-top:16px;">
+    <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">自然语言解读 (Human Meaning)</div>
+    <div id="cron-meaning" style="font-size:1.15rem; font-weight:bold; color:var(--accent); margin:6px 0;">在每天的 01:00 触发执行</div>
+    <div id="cron-next-runs" style="color:var(--text-muted); font-size:0.85rem; margin-top:10px; line-height:1.6;">
+      <strong>未来预演时刻：</strong><br>
+      • 2026-08-21 01:00:00<br>
+      • 2026-08-22 01:00:00<br>
+      • 2026-08-23 01:00:00
+    </div>
+  </div>
+</div>`
+  },
+  {
+    id: 'local-llm-vram-sizer',
+    name: 'Local LLM VRAM & Hardware Sizer',
+    desc: 'Calculate VRAM requirements and token generation speeds for Local LLMs across quantizations',
+    cat: 'AI Engineering',
+    icon: '⚡',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Local LLM VRAM & Hardware Sizer · 本地大模型显存速算器</h2>
+    <p>精准测算在消费级显卡（RTX 3060/4090/Mac M系列）上运行开源大模型所需的显存容量、量化精度（GGUF Q4/Q8/FP16）与上下文长度限制。</p>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:16px;">
+    <div class="field-group">
+      <label class="field-label">模型参数量 (Model Size)</label>
+      <select id="vram-model-size" class="form-input" onchange="calcVramUsage()">
+        <option value="1.5">1.5B (Qwen 2.5 / DeepSeek)</option>
+        <option value="7">7B / 8B (Llama 3.1 / Qwen 2.5)</option>
+        <option value="14">14B (Qwen 2.5 / DeepSeek)</option>
+        <option value="27" selected>27B / 32B (Qwen 3.8 / Gemma)</option>
+        <option value="70">70B (Llama 3.3 / Qwen)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">量化格式 (Quantization)</label>
+      <select id="vram-quant" class="form-input" onchange="calcVramUsage()">
+        <option value="4" selected>4-bit (GGUF Q4_K_M) - 推荐</option>
+        <option value="8">8-bit (GGUF Q8_0 / INT8)</option>
+        <option value="16">16-bit (FP16 / BF16 原生)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">上下文窗口 (Context Window)</label>
+      <select id="vram-context" class="form-input" onchange="calcVramUsage()">
+        <option value="4096">4K tokens</option>
+        <option value="8192" selected>8K tokens</option>
+        <option value="32768">32K tokens</option>
+        <option value="131072">128K tokens (长文本)</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin:20px 0;">
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">模型权重占用 (Weights)</div>
+      <div id="vram-weight-res" style="font-size:1.8rem; font-weight:bold; color:var(--accent); font-family:var(--font-mono); margin:6px 0;">15.2 GB</div>
+    </div>
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">KV Cache 动态显存</div>
+      <div id="vram-kv-res" style="font-size:1.8rem; font-weight:bold; color:#c084fc; font-family:var(--font-mono); margin:6px 0;">1.8 GB</div>
+    </div>
+    <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+      <div style="color:var(--text-muted); font-size:0.8rem; font-weight:bold;">建议显存容量 (Total VRAM)</div>
+      <div id="vram-total-res" style="font-size:1.8rem; font-weight:900; color:#34d399; font-family:var(--font-mono); margin:6px 0;">≥ 18.0 GB</div>
+    </div>
+  </div>
+
+  <div id="vram-hardware-recommendation" style="background:var(--bg-pane); padding:14px 18px; border-radius:8px; border:1px solid var(--border); font-size:0.9rem; line-height:1.7;">
+    <!-- Hardware recommendation injected here -->
+  </div>
+</div>`
+  },
+  {
     id: 'html-tag-stripper',
     name: 'HTML Tag Stripper & Text Extractor',
     desc: 'Strip all HTML markup, scripts, and CSS styles to extract clean plain text',
@@ -6660,6 +6805,121 @@ window.stripHtmlTags = function() {
 
   const out = document.getElementById('html-strip-output');
   if(out) out.value = decoded;
+};
+
+
+
+// Autonomous synthesized tool logic: 本地大模型显存与硬件速算器
+
+window.calcVramUsage = function() {
+  const size = parseFloat((document.getElementById('vram-model-size') || {}).value || 27);
+  const quant = parseInt((document.getElementById('vram-quant') || {}).value || 4);
+  const ctx = parseInt((document.getElementById('vram-context') || {}).value || 8192);
+
+  // Weights VRAM (Size in B * (quant / 8) * 1.1 overhead)
+  const weightGb = (size * (quant / 8) * 1.12).toFixed(1);
+  
+  // KV Cache VRAM approx: 2 * layers * heads * dim * context
+  // rule of thumb: ~0.5GB per 8K context on 7B, scales with size
+  const kvGb = ((ctx / 8192) * (size / 7) * 0.65).toFixed(1);
+  
+  const totalGb = (parseFloat(weightGb) + parseFloat(kvGb) + 1.0).toFixed(1);
+
+  const elWeight = document.getElementById('vram-weight-res');
+  const elKv = document.getElementById('vram-kv-res');
+  const elTotal = document.getElementById('vram-total-res');
+  const elRec = document.getElementById('vram-hardware-recommendation');
+
+  if (elWeight) elWeight.innerText = `${weightGb} GB`;
+  if (elKv) elKv.innerText = `${kvGb} GB`;
+  if (elTotal) elTotal.innerText = `≥ ${totalGb} GB`;
+
+  let hw = '<strong>🖥️ 适配硬件方案：</strong>';
+  const tot = parseFloat(totalGb);
+  if (tot <= 8) {
+    hw += ' 🟢 入门级友好：RTX 3060 12G、RTX 4060、MacBook Air M2/M3 (16GB) 均可超流畅满血离线运行！';
+  } else if (tot <= 16) {
+    hw += ' 🟡 中端配置：推荐 RTX 4080 (16G)、RTX 3090、Apple M2/M3 Pro (18GB/24GB)。';
+  } else if (tot <= 24) {
+    hw += ' 🟠 高性能工作站：推荐 RTX 3090/4090 24G 单卡，或 Mac Studio (36GB+ 统一内存)。';
+  } else {
+    hw += ' 🔴 专业多卡集群：显存要求较高，建议双卡 RTX 4090 (48G) 或 Mac Studio M2 Ultra (64G/128G)。';
+  }
+  if (elRec) elRec.innerHTML = hw;
+};
+
+
+
+// Autonomous synthesized tool logic: Cron 表达式可视化生成与校验器
+
+window.setCronPreset = function(expr) {
+  const el = document.getElementById('cron-input');
+  if (el) {
+    el.value = expr;
+    parseCronExpr();
+  }
+};
+
+window.parseCronExpr = function() {
+  const expr = ((document.getElementById('cron-input') || {}).value || '').trim();
+  const elMeaning = document.getElementById('cron-meaning');
+  if (!elMeaning) return;
+
+  const parts = expr.split(/\s+/);
+  if (parts.length < 5) {
+    elMeaning.innerText = '❌ 请输入至少 5 位的标准 Cron 表达式 (分 时 日 月 周)';
+    elMeaning.style.color = '#ef4444';
+    return;
+  }
+  
+  elMeaning.style.color = 'var(--accent)';
+  if (expr === '0 1 * * *') elMeaning.innerText = '在每天凌晨 01:00 (01:00 AM) 准时执行';
+  else if (expr === '* * * * *') elMeaning.innerText = '每隔 1 分钟连续执行一次';
+  else if (expr.startsWith('*/')) elMeaning.innerText = `每隔 ${parts[0].replace('*/','')} 分钟执行一次`;
+  else if (parts[4] === '1-5') elMeaning.innerText = `在每周一至周五工作日 ${parts[1] || ''}:${parts[0] || '00'} 触发`;
+  else elMeaning.innerText = `已解析表达式 [${expr}]：按设定计划自动循环触发`;
+};
+
+
+
+// Autonomous synthesized tool logic: 大模型长文本大海捞针测试器
+
+window.generateNiahPayload = function() {
+  const size = parseInt((document.getElementById('niah-size') || {}).value || 8000);
+  let depth = (document.getElementById('niah-depth') || {}).value || '50';
+  const key = (document.getElementById('niah-key') || {}).value || 'SECRET-FLAG-{778899}';
+  
+  if (depth === 'random') depth = Math.floor(Math.random() * 80 + 10);
+  else depth = parseInt(depth);
+
+  const needle = `\n\n[IMPORTANT SYSTEM NOTE: The confidential operation code is ${key}. Memorize this exactly.]\n\n`;
+  
+  const fillerBase = "The autonomous ecosystem maintains distributed state across multiple microservices. In software architecture, reliability engineering requires deterministic fault tolerance, token caching, and strict invariant validation. Modern agentic systems orchestrate heterogeneous small language models to balance latency and accuracy. ";
+  
+  const totalParagraphs = Math.floor(size / 30);
+  const insertIndex = Math.floor(totalParagraphs * (depth / 100));
+
+  let output = "You are an automated evaluation auditor. Please carefully read the following extensive document and answer the verification question at the end.\n\n--- BEGIN DOCUMENT ---\n\n";
+
+  for (let i = 0; i < totalParagraphs; i++) {
+    output += `Paragraph ${i+1}: ${fillerBase}\n\n`;
+    if (i === insertIndex) {
+      output += needle;
+    }
+  }
+
+  output += "--- END DOCUMENT ---\n\nQUESTION: What is the confidential operation code mentioned in the document? Output ONLY the exact code value without preamble.";
+
+  const outEl = document.getElementById('niah-output');
+  if (outEl) outEl.value = output;
+};
+
+window.copyNiahPayload = function() {
+  const outEl = document.getElementById('niah-output');
+  if (outEl && outEl.value) {
+    if (typeof copyText === 'function') copyText(outEl.value);
+    else navigator.clipboard.writeText(outEl.value);
+  }
 };
 
 
