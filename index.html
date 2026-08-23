@@ -1738,6 +1738,31 @@ const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
   {
+    id: 'mcp-inspector',
+    name: 'MCP Server Inspector',
+    desc: 'Visualize and inspect MCP server capabilities, tools, and schemas.',
+    category: 'ai',
+    icon: '🔌',
+    badge: 'HOT',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>MCP Server Schema Inspector</h2>
+    <p>Model Context Protocol (MCP) 接口调试探针，快速验证自定义 AI 服务器提供的工具能力。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">输入 MCP Server JSON Schema 配置</label>
+    <textarea class="textarea-code" id="mcp-schema-input" rows="6" placeholder='{"tools": [{"name": "read_file", "description": "..."}]}'></textarea>
+  </div>
+  <button class="btn-action active" onclick="inspectMcp()">⚡ 解析与探测</button>
+  <div class="field-group" style="margin-top:16px;">
+    <label class="field-label">可用工具概览</label>
+    <div id="mcp-schema-output" style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); font-family:var(--font-mono); font-size:0.9rem;">
+      等待解析...
+    </div>
+  </div>
+</div>`
+  },
+  {
     id: 'json-to-ts-go',
     name: 'JSON to TypeScript & Go Struct',
     desc: 'Convert JSON objects to TypeScript Interfaces and Go Structs instantly',
@@ -7071,6 +7096,29 @@ window.convertJsonModel = function(lang) {
     }
   } catch (e) {
     outEl.value = '❌ 无效的 JSON 格式';
+  }
+};
+
+
+
+// Autonomous synthesized tool logic: MCP 服务器探针与调试器
+
+window.inspectMcp = function() {
+  const input = (document.getElementById('mcp-schema-input') || {}).value || '';
+  const outEl = document.getElementById('mcp-schema-output');
+  if (!input.trim() || !outEl) return;
+  try {
+    const obj = JSON.parse(input);
+    let html = '<ul>';
+    const tools = obj.tools || [];
+    if (tools.length === 0) html += '<li>没有发现声明的 Tools</li>';
+    tools.forEach(t => {
+      html += `<li style="margin-bottom:10px;"><strong>🛠️ ${t.name}</strong><br><span style="color:var(--text-muted); font-size:0.8rem;">${t.description || '无描述'}</span></li>`;
+    });
+    html += '</ul>';
+    outEl.innerHTML = html;
+  } catch (e) {
+    outEl.innerHTML = '<span style="color:#ef4444;">❌ Schema JSON 解析失败</span>';
   }
 };
 
