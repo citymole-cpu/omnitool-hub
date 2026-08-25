@@ -1738,6 +1738,24 @@ const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
   {
+    id: 'agent-memory',
+    name: 'Agentic Memory KV Store',
+    desc: 'A visual interface to manage local key-value memory states for LLM agents across sessions.',
+    category: 'ai',
+    icon: '🧠',
+    badge: 'NEW',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Agentic Memory KV Store</h2>
+    <p>可视化管理大模型的长期记忆状态</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">模拟记忆检索</label>
+    <p style="color:var(--text-muted);font-size:0.9rem;">(纯前端展示，后续接入 LocalStorage 记忆库逻辑)</p>
+  </div>
+</div>`
+  },
+  {
     id: 'mcp-inspector',
     name: 'MCP Server Inspector',
     desc: 'Visualize and inspect MCP server capabilities, tools, and schemas.',
@@ -7122,6 +7140,10 @@ window.inspectMcp = function() {
   }
 };
 
+
+
+// Autonomous synthesized tool logic: 轻量级本地 AI 记忆库工具
+// TODO: Implement local KV store for agent memory
 
 </script>
 </body>
