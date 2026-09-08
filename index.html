@@ -1773,6 +1773,8 @@ const TOOLS = [
     <div id="forensic-ai-warning" style="margin-top:12px; font-weight:bold; color:#ef4444; font-size:1.1rem; display:none; border:1px solid #ef4444; padding:10px; border-radius:6px; background:rgba(239,68,68,0.1);">
       ⚠️ 警告: 发现极高概率的 AI 生成或图像编辑软件痕迹！
     </div>
+    <div id="forensic-ai-report" style="margin-top:12px; font-weight:bold; color:var(--text); font-size:1rem; display:none; border:1px solid var(--border); padding:10px; border-radius:6px; background:var(--bg-pane);">
+    </div>
   </div>
 </div>`
   },
@@ -7243,7 +7245,7 @@ window.analyzeImage = function(input) {
     lowQImg.src = lowQDataUrl;
     
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
       const buffer = e.target.result;
       const view = new Uint8Array(buffer);
       let binaryString = '';
@@ -7259,13 +7261,47 @@ window.analyzeImage = function(input) {
       
       const reportDiv = document.getElementById('forensic-exif-report');
       const warningDiv = document.getElementById('forensic-ai-warning');
+      const aiReportDiv = document.getElementById('forensic-ai-report');
       
       if (foundTags.length > 0) {
         reportDiv.innerHTML = `⚠️ 发现二进制元数据包含编辑特征码: <strong>${foundTags.join(', ')}</strong><br>这强烈暗示该图片不是由相机的原始传感器直接输出的，而是由生成式 AI 合成或经过专业软件二次渲染处理的。`;
         warningDiv.style.display = 'block';
       } else {
-        reportDiv.innerHTML = '✅ 安全: 在前 100KB 的文件头中未检测到主流 AI 绘图引擎或 Photoshop 修改签名的明文标签。<br><br>👉 <strong>进阶研判：</strong>请观察右侧的 ELA（错误级别）热力图。如果某个人脸、文字或区域的“亮度”与周围背景环境明显不一致（出现突兀的高对比度亮块），说明该处像素的压缩率已被破坏，极有可能是后期拼接 (Copy-Move) 或涂抹修改过。';
+        reportDiv.innerHTML = '✅ EXIF 标签安全: 未检测到明文 AI/PS 签名（可能已被社交软件抹除）。';
         warningDiv.style.display = 'none';
+      }
+      
+      // AI Inference Phase
+      aiReportDiv.innerHTML = '🤖 正在加载本地视觉 AI 检测模型 (Swin Transformer)... <br><span style="font-size:0.8rem; color:var(--text-muted);">首次加载模型（约 100MB）需要几秒钟，此过程完全在浏览器内运行，零隐私泄露。</span>';
+      aiReportDiv.style.display = 'block';
+      aiReportDiv.style.background = 'var(--bg-pane)';
+      aiReportDiv.style.borderColor = 'var(--border)';
+      
+      try {
+        const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
+        env.allowLocalModels = false;
+        
+        const classifier = await pipeline('image-classification', 'amrita-detectly/detect-ai-image-v1');
+        const results = await classifier(img.src);
+        
+        let artificialScore = 0;
+        let humanScore = 0;
+        results.forEach(r => {
+          if(r.label === 'artificial') artificialScore = r.score;
+          if(r.label === 'human') humanScore = r.score;
+        });
+        
+        if (artificialScore > 0.6) {
+          aiReportDiv.innerHTML = `⚠️ <strong>本地端侧 AI 视觉大模型鉴定：</strong><br>该图像有 <strong style="color:#ef4444">${(artificialScore*100).toFixed(1)}%</strong> 的概率是由 AI 生成或经过深度算法渲染处理的！`;
+          aiReportDiv.style.background = 'rgba(239,68,68,0.1)';
+          aiReportDiv.style.borderColor = '#ef4444';
+        } else {
+          aiReportDiv.innerHTML = `✅ <strong>本地端侧 AI 视觉大模型鉴定：</strong><br>该图像有 <strong style="color:#10b981">${(humanScore*100).toFixed(1)}%</strong> 的概率是真实相机拍摄的原图，未发现明显的 AI 纹理规律。`;
+          aiReportDiv.style.background = 'rgba(16,185,129,0.1)';
+          aiReportDiv.style.borderColor = '#10b981';
+        }
+      } catch(err) {
+        aiReportDiv.innerHTML = `❌ 本地 AI 模型推理失败: ${err.message}`;
       }
     };
     reader.readAsArrayBuffer(file);
