@@ -1738,6 +1738,45 @@ const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
   {
+    id: 'image-forensics',
+    name: 'Image Forensics & AI Detector',
+    desc: '100% Client-side EXIF analyzer and ELA heat map generator to detect manipulated or AI images',
+    category: 'sec',
+    icon: '🕵️',
+    badge: 'HOT',
+    render: () => `<div class="tool-pane">
+  <div class="tool-header">
+    <h2>Image Forensics & AI Detector</h2>
+    <p>100% 在浏览器内存中处理，绝不上传您的隐私图片。通过元数据追踪与错误级别分析 (ELA) 来鉴定图片是否经过深度编辑、拼接或由 AI 生成。</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">上传待鉴定的图片 (JPG/PNG)</label>
+    <input type="file" id="forensic-upload" accept="image/jpeg, image/png" style="margin-bottom: 16px; padding: 10px; border: 2px dashed var(--border); width: 100%; border-radius: 8px; cursor: pointer;" onchange="analyzeImage(this)" />
+  </div>
+  
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+    <div>
+      <h3 style="font-size:1.1rem; color:var(--text); margin-bottom:10px;">原始图片预览</h3>
+      <canvas id="forensic-canvas-orig" style="width:100%; max-height:400px; object-fit:contain; background:#111; border:1px solid var(--border); border-radius:8px;"></canvas>
+    </div>
+    <div>
+      <h3 style="font-size:1.1rem; color:var(--text); margin-bottom:10px;">ELA 热力图 (高亮篡改断层)</h3>
+      <canvas id="forensic-canvas-ela" style="width:100%; max-height:400px; object-fit:contain; background:#111; border:1px solid var(--border); border-radius:8px;"></canvas>
+    </div>
+  </div>
+  
+  <div style="background:var(--bg-pane); padding:16px; border-radius:8px; border:1px solid var(--border); margin-top:20px;">
+    <h3 style="font-size:1.1rem; color:var(--text); margin-bottom:10px;">EXIF 元数据诊断报告</h3>
+    <div id="forensic-exif-report" style="font-size:0.95rem; font-family:var(--font-mono); line-height:1.6; color:var(--text-muted); max-height: 200px; overflow-y:auto;">
+      等待上传图片...
+    </div>
+    <div id="forensic-ai-warning" style="margin-top:12px; font-weight:bold; color:#ef4444; font-size:1.1rem; display:none; border:1px solid #ef4444; padding:10px; border-radius:6px; background:rgba(239,68,68,0.1);">
+      ⚠️ 警告: 发现极高概率的 AI 生成或图像编辑软件痕迹！
+    </div>
+  </div>
+</div>`
+  },
+  {
     id: 'agent-memory',
     name: 'Agentic Memory KV Store',
     desc: 'A visual interface to manage local key-value memory states for LLM agents across sessions.',
@@ -7144,6 +7183,94 @@ window.inspectMcp = function() {
 
 // Autonomous synthesized tool logic: 轻量级本地 AI 记忆库工具
 // TODO: Implement local KV store for agent memory
+
+
+// Autonomous synthesized tool logic: 图片真实性/AI修改取证工具
+
+window.analyzeImage = function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const img = new Image();
+  img.onload = function() {
+    const origCanvas = document.getElementById('forensic-canvas-orig');
+    const elaCanvas = document.getElementById('forensic-canvas-ela');
+    const ctxOrig = origCanvas.getContext('2d');
+    const ctxEla = elaCanvas.getContext('2d');
+    
+    let width = img.width;
+    let height = img.height;
+    const MAX = 1200;
+    if (width > MAX || height > MAX) {
+      const ratio = Math.min(MAX/width, MAX/height);
+      width = Math.floor(width * ratio);
+      height = Math.floor(height * ratio);
+    }
+    
+    origCanvas.width = width; origCanvas.height = height;
+    elaCanvas.width = width; elaCanvas.height = height;
+    
+    ctxOrig.drawImage(img, 0, 0, width, height);
+    ctxEla.drawImage(img, 0, 0, width, height);
+    
+    const lowQDataUrl = elaCanvas.toDataURL('image/jpeg', 0.80);
+    const lowQImg = new Image();
+    lowQImg.onload = function() {
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = width; offCanvas.height = height;
+      const offCtx = offCanvas.getContext('2d');
+      offCtx.drawImage(lowQImg, 0, 0, width, height);
+      
+      const origData = ctxOrig.getImageData(0, 0, width, height);
+      const lowQData = offCtx.getImageData(0, 0, width, height);
+      const diffData = ctxEla.createImageData(width, height);
+      
+      for (let i = 0; i < origData.data.length; i += 4) {
+        const rDiff = Math.abs(origData.data[i] - lowQData.data[i]);
+        const gDiff = Math.abs(origData.data[i+1] - lowQData.data[i+1]);
+        const bDiff = Math.abs(origData.data[i+2] - lowQData.data[i+2]);
+        
+        const boost = 25; 
+        diffData.data[i] = rDiff * boost;
+        diffData.data[i+1] = gDiff * boost;
+        diffData.data[i+2] = bDiff * boost;
+        diffData.data[i+3] = 255;
+      }
+      ctxEla.putImageData(diffData, 0, 0);
+    };
+    lowQImg.src = lowQDataUrl;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const buffer = e.target.result;
+      const view = new Uint8Array(buffer);
+      let binaryString = '';
+      for (let i = 0; i < Math.min(view.length, 100000); i++) {
+        binaryString += String.fromCharCode(view[i]);
+      }
+      
+      const aiSignatures = ['Midjourney', 'Stable Diffusion', 'DALL-E', 'Adobe Photoshop', 'Photoshop', 'Lightroom', 'GIMP', 'ComfyUI'];
+      let foundTags = [];
+      aiSignatures.forEach(tag => {
+        if (binaryString.includes(tag)) foundTags.push(tag);
+      });
+      
+      const reportDiv = document.getElementById('forensic-exif-report');
+      const warningDiv = document.getElementById('forensic-ai-warning');
+      
+      if (foundTags.length > 0) {
+        reportDiv.innerHTML = `⚠️ 发现二进制元数据包含编辑特征码: <strong>${foundTags.join(', ')}</strong><br>这强烈暗示该图片不是由相机的原始传感器直接输出的，而是由生成式 AI 合成或经过专业软件二次渲染处理的。`;
+        warningDiv.style.display = 'block';
+      } else {
+        reportDiv.innerHTML = '✅ 安全: 在前 100KB 的文件头中未检测到主流 AI 绘图引擎或 Photoshop 修改签名的明文标签。<br><br>👉 <strong>进阶研判：</strong>请观察右侧的 ELA（错误级别）热力图。如果某个人脸、文字或区域的“亮度”与周围背景环境明显不一致（出现突兀的高对比度亮块），说明该处像素的压缩率已被破坏，极有可能是后期拼接 (Copy-Move) 或涂抹修改过。';
+        warningDiv.style.display = 'none';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  img.src = URL.createObjectURL(file);
+};
+
 
 </script>
 </body>
