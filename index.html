@@ -7281,22 +7281,22 @@ window.analyzeImage = function(input) {
         const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
         env.allowLocalModels = false;
         
-        const classifier = await pipeline('image-classification', 'amrita-detectly/detect-ai-image-v1');
+        const classifier = await pipeline('image-classification', 'onnx-community/Deep-Fake-Detector-v2-Model-ONNX');
         const results = await classifier(img.src);
         
-        let artificialScore = 0;
-        let humanScore = 0;
+        let fakeScore = 0;
+        let realScore = 0;
         results.forEach(r => {
-          if(r.label === 'artificial') artificialScore = r.score;
-          if(r.label === 'human') humanScore = r.score;
+          if(r.label === 'Deepfake') fakeScore = r.score;
+          if(r.label === 'Realism') realScore = r.score;
         });
         
-        if (artificialScore > 0.6) {
-          aiReportDiv.innerHTML = `⚠️ <strong>本地端侧 AI 视觉大模型鉴定：</strong><br>该图像有 <strong style="color:#ef4444">${(artificialScore*100).toFixed(1)}%</strong> 的概率是由 AI 生成或经过深度算法渲染处理的！`;
+        if (fakeScore > 0.55) {
+          aiReportDiv.innerHTML = `⚠️ <strong>本地端侧 AI 深度伪造检测模型鉴定：</strong><br>该图像有 <strong style="color:#ef4444">${(fakeScore*100).toFixed(1)}%</strong> 的概率是由 AI 生成、Midjourney/SD 绘制或经过深度伪造算法处理的！`;
           aiReportDiv.style.background = 'rgba(239,68,68,0.1)';
           aiReportDiv.style.borderColor = '#ef4444';
         } else {
-          aiReportDiv.innerHTML = `✅ <strong>本地端侧 AI 视觉大模型鉴定：</strong><br>该图像有 <strong style="color:#10b981">${(humanScore*100).toFixed(1)}%</strong> 的概率是真实相机拍摄的原图，未发现明显的 AI 纹理规律。`;
+          aiReportDiv.innerHTML = `✅ <strong>本地端侧 AI 深度伪造检测模型鉴定：</strong><br>该图像有 <strong style="color:#10b981">${(realScore*100).toFixed(1)}%</strong> 的概率是天然真实照片，未发现明显的 AI 纹理或深度合成特征。`;
           aiReportDiv.style.background = 'rgba(16,185,129,0.1)';
           aiReportDiv.style.borderColor = '#10b981';
         }
