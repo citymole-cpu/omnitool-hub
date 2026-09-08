@@ -2389,11 +2389,13 @@ const TOOLS = [
 ];
 
 function getToolName(id) {
-  return TOOL_I18N[id]?.[STATE.lang]?.name || TOOL_I18N[id]?.zh?.name || id;
+  const t = TOOLS.find(x => x.id === id);
+  return TOOL_I18N[id]?.[STATE.lang]?.name || TOOL_I18N[id]?.zh?.name || (t && t.name) || id;
 }
 
 function getToolDesc(id) {
-  return TOOL_I18N[id]?.[STATE.lang]?.desc || TOOL_I18N[id]?.zh?.desc || '';
+  const t = TOOLS.find(x => x.id === id);
+  return TOOL_I18N[id]?.[STATE.lang]?.desc || TOOL_I18N[id]?.zh?.desc || (t && t.desc) || '';
 }
 
 function getCatName(cat) {
