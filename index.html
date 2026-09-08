@@ -7263,11 +7263,16 @@ window.analyzeImage = function(input) {
       const warningDiv = document.getElementById('forensic-ai-warning');
       const aiReportDiv = document.getElementById('forensic-ai-report');
       
+      const hasExif = binaryString.includes('Exif');
+      
       if (foundTags.length > 0) {
-        reportDiv.innerHTML = `⚠️ 发现二进制元数据包含编辑特征码: <strong>${foundTags.join(', ')}</strong><br>这强烈暗示该图片不是由相机的原始传感器直接输出的，而是由生成式 AI 合成或经过专业软件二次渲染处理的。`;
+        reportDiv.innerHTML = `⚠️ <strong>发现编辑特征码:</strong> <span style="color:#ef4444">${foundTags.join(', ')}</span><br>这强烈暗示该图片不是由相机的原始传感器直接输出的，而是由生成式 AI 合成或经过专业软件（PS等）二次处理的。`;
         warningDiv.style.display = 'block';
+      } else if (!hasExif) {
+        reportDiv.innerHTML = `🕵️ <strong>元数据状态：已被抹除</strong><br>未检测到标准相机 EXIF 标签。这通常意味着图片经过了社交平台（如微信、微博）的压缩转发，或者被有意剥离了原始信息。此状态下无法通过元数据判定真伪，请依赖下方的 AI 模型鉴定。`;
+        warningDiv.style.display = 'none';
       } else {
-        reportDiv.innerHTML = '✅ EXIF 标签安全: 未检测到明文 AI/PS 签名（可能已被社交软件抹除）。';
+        reportDiv.innerHTML = `ℹ️ <strong>元数据状态：无明显篡改特征</strong><br>保留了部分 EXIF 信息，且未检测到已知 AI 生成器或 PS 的明文签名。`;
         warningDiv.style.display = 'none';
       }
       
