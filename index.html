@@ -7281,7 +7281,7 @@ window.analyzeImage = function(input) {
         const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1');
         env.allowLocalModels = false;
         
-        const classifier = await pipeline('image-classification', 'chrxtina/vit-real-fake-classification-v2-js');
+        const classifier = await pipeline('image-classification', 'chrxtina/vit-real-fake-classification-v2-js', { quantized: false });
         const results = await classifier(img.src);
         
         let fakeScore = 0;
