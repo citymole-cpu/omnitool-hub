@@ -1462,6 +1462,12 @@ const CATEGORY_I18N = {
 };
 
 const TOOL_I18N = {
+  'cursor-rules-gen': {
+    zh: { name: '.cursorrules 提示词生成', desc: '一键生成适用于 Cursor 和 Claude 的最佳实践 System Prompt。' },
+    en: { name: '.cursorrules Generator', desc: 'Generate highly optimized system prompts and .cursorrules files.' },
+    ja: { name: '.cursorrules生成器', desc: 'Cursor向けの最適化されたシステムプロンプトを生成します。' }
+  },
+
   'json-format': {
     zh: { name: 'JSON 格式化与校验', desc: '美化排版、语法校验、单行压缩、键名字母排序及错误精确定位。' },
     en: { name: 'JSON Formatter & Validator', desc: 'Prettify, validate, minify, sort keys, and check syntax errors.' },
@@ -1737,6 +1743,61 @@ const STATE = {
 const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
+  {
+    id: 'cursor-rules-gen',
+    name: '.cursorrules & Prompt Generator',
+    desc: 'Generate highly optimized system prompts and .cursorrules files for AI coding assistants.',
+    cat: 'ai',
+    icon: '🤖',
+    badge: 'NEW',
+    render: () => <div class="tool-pane">
+  <div class="tool-header">
+    <h2>.cursorrules & System Prompt Generator</h2>
+    <p>为你的 Cursor、Claude Code 或 OpenHands 自动生成高度定制的 System Prompt (代码规范约束、无废话模式、测试规范)。</p>
+  </div>
+  
+  <div class="field-group">
+    <label class="field-label">主技术栈 (Tech Stack)</label>
+    <select id="rules-stack" class="select-input" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--bg-pane); color:var(--text);">
+      <option value="react">React / Next.js / TypeScript</option>
+      <option value="vue">Vue 3 / Nuxt / TypeScript</option>
+      <option value="go">Go (Golang)</option>
+      <option value="python">Python (FastAPI / Django)</option>
+      <option value="rust">Rust</option>
+    </select>
+  </div>
+  
+  <div class="field-group">
+    <label class="field-label">样式方案 (Styling)</label>
+    <select id="rules-style" class="select-input" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--bg-pane); color:var(--text);">
+      <option value="tailwind">Tailwind CSS</option>
+      <option value="css-modules">CSS Modules / SCSS</option>
+      <option value="none">无 / 不涉及 UI</option>
+    </select>
+  </div>
+  
+  <div class="field-group">
+    <label class="field-label">附加规则 (Additional Rules)</label>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+      <label style="color:var(--text); font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="rule-no-apology" checked /> 🚫 严禁废话与道歉 (No pleasantries, output code directly)</label>
+      <label style="color:var(--text); font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="rule-typing" checked /> 🔒 强制强类型检查 (Strict typing, no any)</label>
+      <label style="color:var(--text); font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="rule-testing" /> 🧪 要求提供单元测试 (Always include unit tests)</label>
+      <label style="color:var(--text); font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="rule-comments" /> 📝 要求详细的中文注释 (Detailed Chinese comments)</label>
+    </div>
+  </div>
+  
+  <button class="btn-action active" onclick="generateRules()" style="margin-top: 10px;">⚡ 生成 .cursorrules 指令</button>
+  
+  <div class="field-group" style="margin-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <label class="field-label" style="margin:0;">生成的 Markdown 指令</label>
+      <button class="btn-action" style="padding:4px 8px; font-size:0.8rem;" onclick="navigator.clipboard.writeText(document.getElementById('rules-output').value); alert('已复制到剪贴板！');">📋 复制</button>
+    </div>
+    <textarea class="textarea-code" id="rules-output" rows="12" placeholder="点击生成按钮生成..." style="margin-top:10px;" readonly></textarea>
+  </div>
+</div>
+  },
+
   {
     id: 'image-forensics',
     name: 'Image Forensics & AI Detector',
@@ -7314,7 +7375,43 @@ window.analyzeImage = function(input) {
   img.src = URL.createObjectURL(file);
 };
 
-
+\n\n// cursor-rules-gen logic\n
+window.generateRules = function() {
+  const stack = document.getElementById('rules-stack').value;
+  const style = document.getElementById('rules-style').value;
+  const noApology = document.getElementById('rule-no-apology').checked;
+  const typing = document.getElementById('rule-typing').checked;
+  const testing = document.getElementById('rule-testing').checked;
+  const comments = document.getElementById('rule-comments').checked;
+  
+  let rules = "You are an expert software engineer. Follow these rules carefully:\n\n";
+  rules += "### Core Tech Stack\n";
+  
+  if (stack === 'react') {
+    rules += "- Use React, Next.js (App Router), and TypeScript.\n- Prefer functional components and React Hooks.\n- Never use class components.\n";
+  } else if (stack === 'vue') {
+    rules += "- Use Vue 3 (Composition API, <script setup>) and TypeScript.\n- Prefer VueUse for hooks.\n";
+  } else if (stack === 'go') {
+    rules += "- Use Go (Golang) with standard idiomatic patterns.\n- Handle errors explicitly (if err != nil).\n- Keep functions small and modular.\n";
+  } else if (stack === 'python') {
+    rules += "- Use Python 3.10+ with type hints.\n- Prefer FastAPI for web, use Pydantic for data validation.\n";
+  } else if (stack === 'rust') {
+    rules += "- Use stable Rust.\n- Write safe code, handle Results gracefully instead of unwrap().\n";
+  }
+  
+  if (style === 'tailwind') rules += "- Styling: Use Tailwind CSS utility classes. Avoid custom CSS unless absolutely necessary.\n";
+  else if (style === 'css-modules') rules += "- Styling: Use CSS Modules. Maintain scoped class names.\n";
+  
+  rules += "\n### Behavior & Rules\n";
+  
+  if (noApology) rules += "- **NO YAPPING:** Do not apologize. Do not output introductory filler text. Output the exact code blocks directly.\n";
+  if (typing) rules += "- **STRICT TYPING:** Never use ny or loose types. Define precise interfaces/structs.\n";
+  if (testing) rules += "- **TESTING:** Always write robust unit tests for new logic (using Jest/Vitest/Pytest/etc).\n";
+  if (comments) rules += "- **COMMENTS:** Write detailed inline comments in Chinese (中文) to explain complex logic.\n";
+  
+  document.getElementById('rules-output').value = rules;
+};
+\n
 </script>
 </body>
 </html>
