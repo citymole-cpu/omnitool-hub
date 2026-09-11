@@ -1462,6 +1462,11 @@ const CATEGORY_I18N = {
 };
 
 const TOOL_I18N = {
+  'rag-chunker': {
+    zh: { name: 'RAG 文本分块可视化', desc: '可视化调试 RAG Chunk Size 和 Overlap。' },
+    en: { name: 'RAG Text Chunker', desc: 'Simulate text splitting for RAG vector databases.' }
+  },
+
   'cursor-rules-gen': {
     zh: { name: '.cursorrules 提示词生成', desc: '一键生成适用于 Cursor 和 Claude 的最佳实践 System Prompt。' },
     en: { name: '.cursorrules Generator', desc: 'Generate highly optimized system prompts and .cursorrules files.' },
@@ -1743,6 +1748,41 @@ const STATE = {
 const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
+  {
+    id: 'rag-chunker',
+    name: 'RAG Text Chunking Visualizer',
+    desc: 'Simulate and visualize text splitting (chunk size, overlap) for RAG vector databases.',
+    cat: 'ai',
+    icon: '✂️',
+    badge: 'HOT',
+    render: () => <div class="tool-pane">
+  <div class="tool-header">
+    <h2>RAG Text Chunking Visualizer</h2>
+    <p>可视化调试 RAG (检索增强生成) 的文本分块策略。直观查看 Chunk Size 和 Overlap 对上下文截断的影响。</p>
+  </div>
+  
+  <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1;">
+      <label class="field-label">Chunk Size (字符数)</label>
+      <input type="number" id="chunk-size" class="text-input" value="150" />
+    </div>
+    <div style="flex:1;">
+      <label class="field-label">Overlap (重叠区字符数)</label>
+      <input type="number" id="chunk-overlap" class="text-input" value="30" />
+    </div>
+  </div>
+  
+  <textarea id="rag-input" class="textarea-code" rows="6" placeholder="输入用于 RAG 召回的长文本...">
+Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to intelligence of humans and other animals. Example tasks in which this is done include speech recognition, computer vision, translation between (natural) languages, as well as other mappings of inputs.
+The term "artificial intelligence" had previously been used to describe machines that mimic and display "human" cognitive skills that are associated with the human mind, such as "learning" and "problem-solving". This definition has since been rejected by major AI researchers who now describe AI in terms of rationality and acting rationally.
+  </textarea>
+  
+  <button class="btn-action active" onclick="visualizeChunks()" style="margin-top: 10px;">✂️ 可视化分块</button>
+  
+  <div id="rag-output" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;"></div>
+</div>
+  },
+
   {
     id: 'cursor-rules-gen',
     name: '.cursorrules & Prompt Generator',
@@ -7410,6 +7450,50 @@ window.generateRules = function() {
   if (comments) rules += "- **COMMENTS:** Write detailed inline comments in Chinese (中文) to explain complex logic.\n";
   
   document.getElementById('rules-output').value = rules;
+};
+\n\n\n// rag-chunker logic\n
+window.visualizeChunks = function() {
+  const text = document.getElementById('rag-input').value.trim();
+  const size = parseInt(document.getElementById('chunk-size').value, 10);
+  const overlap = parseInt(document.getElementById('chunk-overlap').value, 10);
+  const out = document.getElementById('rag-output');
+  out.innerHTML = '';
+  
+  if (!text || size <= 0 || overlap >= size) {
+    out.innerHTML = '<div style="color:red;">参数错误 (Size 必须 > 0，Overlap 必须 < Size)</div>';
+    return;
+  }
+  
+  let chunks = [];
+  let i = 0;
+  while (i < text.length) {
+    let chunk = text.substring(i, i + size);
+    chunks.push(chunk);
+    i += (size - overlap);
+  }
+  
+  chunks.forEach((c, idx) => {
+    let div = document.createElement('div');
+    div.style.padding = '10px';
+    div.style.background = idx % 2 === 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+    div.style.borderLeft = idx % 2 === 0 ? '4px solid #3b82f6' : '4px solid #10b981';
+    div.style.borderRadius = '4px';
+    div.style.fontFamily = 'var(--font-mono)';
+    div.style.fontSize = '0.9rem';
+    
+    let header = document.createElement('div');
+    header.style.fontWeight = 'bold';
+    header.style.marginBottom = '6px';
+    header.style.color = 'var(--text-muted)';
+    header.innerText = [Chunk ] Length: ;
+    
+    let content = document.createElement('div');
+    content.innerText = c;
+    
+    div.appendChild(header);
+    div.appendChild(content);
+    out.appendChild(div);
+  });
 };
 \n
 </script>
