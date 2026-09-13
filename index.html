@@ -1462,6 +1462,11 @@ const CATEGORY_I18N = {
 };
 
 const TOOL_I18N = {
+  'mcp-schema-gen': {
+    zh: { name: 'MCP 协议代码生成', desc: '可视化生成 Anthropic MCP 服务器启动代码。' },
+    en: { name: 'MCP Server Gen', desc: 'Generate boilerplate for Model Context Protocol servers.' }
+  },
+
   'vram-calc': {
     zh: { name: '大模型显存计算器', desc: '估算本地运行 LLM 需要的显存大小。' },
     en: { name: 'Local LLM VRAM Calc', desc: 'Calculate GPU VRAM for running local models.' }
@@ -1753,6 +1758,53 @@ const STATE = {
 const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
+  {
+    id: 'mcp-schema-gen',
+    name: 'MCP Server Code Generator',
+    desc: 'Visually define tools and export boilerplate for Anthropic Model Context Protocol (MCP) servers in TS/Python.',
+    cat: 'ai',
+    icon: '🔌',
+    badge: 'HOT',
+    render: () => <div class="tool-pane">
+  <div class="tool-header">
+    <h2>MCP Server Code Generator</h2>
+    <p>可视化定义 AI Agent 的工具函数，一键生成符合 Anthropic Model Context Protocol (MCP) 标准的 JSON Schema 及 Python/TS 启动代码。</p>
+  </div>
+  
+  <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1;">
+      <label class="field-label">工具名称 (Tool Name)</label>
+      <input type="text" id="mcp-name" class="text-input" value="get_weather" placeholder="e.g. get_weather" />
+    </div>
+    <div style="flex:2;">
+      <label class="field-label">工具描述 (Description)</label>
+      <input type="text" id="mcp-desc" class="text-input" value="Get current weather for a location." />
+    </div>
+  </div>
+  
+  <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1;">
+      <label class="field-label">目标语言 (Export Language)</label>
+      <select id="mcp-lang" class="select-input" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--bg-pane); color:var(--text);">
+        <option value="python">Python (FastMCP)</option>
+        <option value="ts">TypeScript (@modelcontextprotocol/sdk)</option>
+        <option value="json">Raw JSON Schema</option>
+      </select>
+    </div>
+  </div>
+  
+  <button class="btn-action active" onclick="generateMcpCode()" style="margin-top: 10px;">🔌 生成 MCP 样板代码</button>
+  
+  <div class="field-group" style="margin-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <label class="field-label" style="margin:0;">生成的代码片段</label>
+      <button class="btn-action" style="padding:4px 8px; font-size:0.8rem;" onclick="navigator.clipboard.writeText(document.getElementById('mcp-output').value); alert('已复制到剪贴板！');">📋 复制</button>
+    </div>
+    <textarea class="textarea-code" id="mcp-output" rows="14" placeholder="点击生成按钮..." style="margin-top:10px;" readonly></textarea>
+  </div>
+</div>
+  },
+
   {
     id: 'vram-calc',
     name: 'Local LLM VRAM Calculator',
@@ -7591,6 +7643,77 @@ window.calculateVram = function() {
   
   totalDiv.innerHTML = 🔥 推荐最少显存 (VRAM):  GB;
   out.style.display = 'block';
+};
+\n\n\n// mcp-schema-gen logic\n
+window.generateMcpCode = function() {
+  const name = document.getElementById('mcp-name').value.trim() || 'my_tool';
+  const desc = document.getElementById('mcp-desc').value.trim() || 'My custom MCP tool.';
+  const lang = document.getElementById('mcp-lang').value;
+  
+  let out = '';
+  
+  const jsonSchema = {
+    name: name,
+    description: desc,
+    inputSchema: {
+      type: "object",
+      properties: {
+        location: { type: "string", description: "City or region." }
+      },
+      required: ["location"]
+    }
+  };
+  
+  if (lang === 'json') {
+    out = JSON.stringify(jsonSchema, null, 2);
+  } else if (lang === 'python') {
+    out = rom mcp.server.fastmcp import FastMCP
+
+# Initialize FastMCP server
+mcp = FastMCP("My Custom Server")
+
+@mcp.tool()
+def (location: str) -> str:
+    """"""
+    # TODO: Implement your logic here
+    return f"Result for {location}"
+
+if __name__ == "__main__":
+    # Run the server via stdio
+    mcp.run(transport='stdio')
+;
+  } else if (lang === 'ts') {
+    out = import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+
+const server = new Server({ name: "my-server", version: "1.0.0" }, { capabilities: { tools: {} } });
+
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [
+    
+  ]
+}));
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  if (request.params.name === "${name}") {
+    const { location } = request.params.arguments;
+    // TODO: Implement your logic here
+    return { content: [{ type: "text", text: \`Result for \${location}\` }] };
+  }
+  throw new Error("Tool not found");
+});
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.log("MCP Server running on stdio");
+}
+main().catch(console.error);
+;
+  }
+  
+  document.getElementById('mcp-output').value = out;
 };
 \n
 </script>
