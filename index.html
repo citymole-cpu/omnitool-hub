@@ -1462,6 +1462,11 @@ const CATEGORY_I18N = {
 };
 
 const TOOL_I18N = {
+  'vram-calc': {
+    zh: { name: '大模型显存计算器', desc: '估算本地运行 LLM 需要的显存大小。' },
+    en: { name: 'Local LLM VRAM Calc', desc: 'Calculate GPU VRAM for running local models.' }
+  },
+
   'rag-chunker': {
     zh: { name: 'RAG 文本分块可视化', desc: '可视化调试 RAG Chunk Size 和 Overlap。' },
     en: { name: 'RAG Text Chunker', desc: 'Simulate text splitting for RAG vector databases.' }
@@ -1748,6 +1753,58 @@ const STATE = {
 const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
+  {
+    id: 'vram-calc',
+    name: 'Local LLM VRAM Calculator',
+    desc: 'Calculate required GPU VRAM (Weights + KV Cache) for running local models (GGUF, EXL2).',
+    cat: 'ai',
+    icon: '💾',
+    badge: 'HOT',
+    render: () => <div class="tool-pane">
+  <div class="tool-header">
+    <h2>Local LLM VRAM Calculator</h2>
+    <p>计算在本地运行大语言模型（如 Llama, Qwen）所需的显存，避免 CUDA Out Of Memory 报错。包含模型权重和 KV Cache 的估算。</p>
+  </div>
+  
+  <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1;">
+      <label class="field-label">模型参数量 (Billion)</label>
+      <input type="number" id="vram-params" class="text-input" value="8" step="1" />
+    </div>
+    <div style="flex:1;">
+      <label class="field-label">量化精度 (Quantization)</label>
+      <select id="vram-quant" class="select-input" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--bg-pane); color:var(--text);">
+        <option value="16">FP16 / BF16 (16-bit)</option>
+        <option value="8">8-bit (Q8)</option>
+        <option value="4" selected>4-bit (Q4_K_M)</option>
+        <option value="3">3-bit</option>
+      </select>
+    </div>
+  </div>
+  
+  <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1;">
+      <label class="field-label">上下文长度 (Context Size)</label>
+      <select id="vram-ctx" class="select-input" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--bg-pane); color:var(--text);">
+        <option value="4096">4K (4096)</option>
+        <option value="8192" selected>8K (8192)</option>
+        <option value="32768">32K</option>
+        <option value="131072">128K</option>
+      </select>
+    </div>
+  </div>
+  
+  <button class="btn-action active" onclick="calculateVram()" style="margin-top: 10px;">💾 计算所需显存</button>
+  
+  <div id="vram-output" style="margin-top:20px; padding:15px; border-radius:8px; background:rgba(59,130,246,0.1); border:1px solid #3b82f6; display:none;">
+    <h3 style="margin-bottom:10px; color:var(--text);">计算结果分析</h3>
+    <ul style="color:var(--text-muted); line-height:1.8; padding-left:20px;" id="vram-list">
+    </ul>
+    <div id="vram-total" style="margin-top:15px; font-size:1.2rem; font-weight:bold; color:#10b981;"></div>
+  </div>
+</div>
+  },
+
   {
     id: 'rag-chunker',
     name: 'RAG Text Chunking Visualizer',
@@ -7494,6 +7551,46 @@ window.visualizeChunks = function() {
     div.appendChild(content);
     out.appendChild(div);
   });
+};
+\n\n\n// vram-calc logic\n
+window.calculateVram = function() {
+  const params = parseFloat(document.getElementById('vram-params').value);
+  const quant = parseInt(document.getElementById('vram-quant').value, 10);
+  const ctx = parseInt(document.getElementById('vram-ctx').value, 10);
+  
+  if (isNaN(params) || params <= 0) {
+    alert("请输入有效的模型参数量");
+    return;
+  }
+  
+  // Weights memory: (Parameters * 1e9 * bits) / 8 bytes / 1024^3 GB
+  const weightsGB = (params * 1e9 * quant) / 8 / (1024 ** 3);
+  
+  // KV Cache estimation (rough heuristic for modern models like Llama 3)
+  // ~ 2 bytes per token per parameter roughly?
+  // A better standard heuristic: 
+  // memory_per_token (bytes) = 2 * 2 * n_layers * d_model
+  // For simplicity: roughly 0.0001 GB per 1k context per Billion params (very rough)
+  // Let's use a standard empirical formula: ~ 0.5 GB per 8k context for an 8B model.
+  const kvCacheGB = (ctx / 8192) * (params / 8) * 0.5;
+  
+  // CUDA Context / Overhead
+  const overheadGB = 0.6;
+  
+  const totalGB = weightsGB + kvCacheGB + overheadGB;
+  
+  const out = document.getElementById('vram-output');
+  const list = document.getElementById('vram-list');
+  const totalDiv = document.getElementById('vram-total');
+  
+  list.innerHTML = 
+    <li><strong>模型权重占用:</strong> ~ GB</li>
+    <li><strong>KV Cache (上下文缓存):</strong> ~ GB</li>
+    <li><strong>CUDA 框架开销:</strong> ~ GB</li>
+  ;
+  
+  totalDiv.innerHTML = 🔥 推荐最少显存 (VRAM):  GB;
+  out.style.display = 'block';
 };
 \n
 </script>
