@@ -1462,6 +1462,16 @@ const CATEGORY_I18N = {
 };
 
 const TOOL_I18N = {
+  'llm-cost-calc': {
+    zh: { name: 'API 成本计算器', desc: '一键比对 GPT-4o, Claude 3.5, DeepSeek 的 API 调用成本。' },
+    en: { name: 'LLM Cost Calc', desc: 'Compare API costs for GPT-4o, Claude 3.5, and DeepSeek.' }
+  },
+
+  'ai-schema-gen': {
+    zh: { name: 'AI 结构化 Schema', desc: '一键生成 LLM 结构化输出所需的 Schema 和 Zod/Pydantic 模型。' },
+    en: { name: 'AI Schema Gen', desc: 'Generate JSON Schema, Zod, and Pydantic models for structured outputs.' }
+  },
+
   'mcp-schema-gen': {
     zh: { name: 'MCP 协议代码生成', desc: '可视化生成 Anthropic MCP 服务器启动代码。' },
     en: { name: 'MCP Server Gen', desc: 'Generate boilerplate for Model Context Protocol servers.' }
@@ -1758,6 +1768,98 @@ const STATE = {
 const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
+  {
+    id: 'llm-cost-calc',
+    name: 'LLM API Token & Cost Calculator',
+    desc: 'Estimate token counts and compare API costs across GPT-4o, Claude 3.5, and DeepSeek.',
+    cat: 'ai',
+    icon: '💸',
+    badge: 'HOT',
+    render: () => <div class="tool-pane">
+  <div class="tool-header">
+    <h2>LLM API Cost Calculator</h2>
+    <p>预估大语言模型的 Token 数量，并一键横向比对 GPT-4o, Claude 3.5 Sonnet, DeepSeek 的 API 请求成本。</p>
+  </div>
+  
+  <div class="field-group">
+    <label class="field-label">输入提示词 (Input Prompt)</label>
+    <textarea id="cost-input" class="textarea-code" rows="6" placeholder="输入你想发送给大模型的文本..."></textarea>
+  </div>
+  
+  <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1;">
+      <label class="field-label">预计输出 Token (Estimated Output Tokens)</label>
+      <input type="number" id="cost-output-tokens" class="text-input" value="500" step="100" />
+    </div>
+  </div>
+  
+  <button class="btn-action active" onclick="calculateCost()" style="margin-top: 10px;">💸 计算 Token 与成本</button>
+  
+  <div id="cost-results" style="margin-top:20px; display:none; flex-direction:column; gap:10px;">
+    <div style="padding:15px; border-radius:8px; background:rgba(59,130,246,0.1); border:1px solid #3b82f6;">
+      <h3 style="margin-bottom:10px; color:var(--text);">预估 Token 数</h3>
+      <div id="cost-token-count" style="font-size:1.5rem; font-weight:bold; color:#3b82f6;"></div>
+    </div>
+    
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+      <div style="padding:15px; border-radius:8px; background:var(--bg-pane); border:1px solid var(--border);">
+        <h4 style="color:var(--text); margin-bottom:5px;">GPT-4o</h4>
+        <div id="cost-gpt4o" style="font-family:var(--font-mono); color:var(--text-muted);"></div>
+      </div>
+      <div style="padding:15px; border-radius:8px; background:var(--bg-pane); border:1px solid var(--border);">
+        <h4 style="color:var(--text); margin-bottom:5px;">Claude 3.5 Sonnet</h4>
+        <div id="cost-claude" style="font-family:var(--font-mono); color:var(--text-muted);"></div>
+      </div>
+      <div style="padding:15px; border-radius:8px; background:var(--bg-pane); border:1px solid var(--border);">
+        <h4 style="color:var(--text); margin-bottom:5px;">DeepSeek V3</h4>
+        <div id="cost-deepseek" style="font-family:var(--font-mono); color:var(--text-muted);"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  },
+
+  {
+    id: 'ai-schema-gen',
+    name: 'AI Structured Output Generator',
+    desc: 'Convert JSON samples into strict JSON Schema, Zod, and Pydantic models for LLM structured outputs.',
+    cat: 'ai',
+    icon: '🧩',
+    badge: 'HOT',
+    render: () => <div class="tool-pane">
+  <div class="tool-header">
+    <h2>AI Structured Output Schema Generator</h2>
+    <p>为 LLM (如 OpenAI/Claude) 的结构化输出 (Structured Outputs) 生成严格的 JSON Schema，并一键导出 TypeScript Zod 和 Python Pydantic 模型。</p>
+  </div>
+  
+  <div class="field-group">
+    <label class="field-label">输入你的 JSON 样例 (Sample JSON)</label>
+    <textarea id="schema-input" class="textarea-code" rows="6" placeholder='{\n  "user_name": "John Doe",\n  "age": 30,\n  "is_active": true\n}'></textarea>
+  </div>
+  
+  <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1;">
+      <label class="field-label">目标格式 (Target Format)</label>
+      <select id="schema-lang" class="select-input" style="padding:10px; width:100%; border:1px solid var(--border); border-radius:6px; background:var(--bg-pane); color:var(--text);">
+        <option value="json_schema">Strict JSON Schema (OpenAI API)</option>
+        <option value="zod">TypeScript (Zod)</option>
+        <option value="pydantic">Python (Pydantic)</option>
+      </select>
+    </div>
+  </div>
+  
+  <button class="btn-action active" onclick="generateSchema()" style="margin-top: 10px;">🧩 生成 Schema 代码</button>
+  
+  <div class="field-group" style="margin-top:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <label class="field-label" style="margin:0;">生成的代码片段</label>
+      <button class="btn-action" style="padding:4px 8px; font-size:0.8rem;" onclick="navigator.clipboard.writeText(document.getElementById('schema-output').value); alert('已复制到剪贴板！');">📋 复制</button>
+    </div>
+    <textarea class="textarea-code" id="schema-output" rows="14" placeholder="点击生成按钮..." style="margin-top:10px;" readonly></textarea>
+  </div>
+</div>
+  },
+
   {
     id: 'mcp-schema-gen',
     name: 'MCP Server Code Generator',
@@ -7714,6 +7816,107 @@ main().catch(console.error);
   }
   
   document.getElementById('mcp-output').value = out;
+};
+\n\n\n// ai-schema-gen logic\n
+window.generateSchema = function() {
+  const input = document.getElementById('schema-input').value.trim();
+  const lang = document.getElementById('schema-lang').value;
+  let parsed = {};
+  
+  try {
+    parsed = JSON.parse(input || '{"user_name":"John Doe","age":30,"is_active":true}');
+  } catch (e) {
+    alert("Invalid JSON format!");
+    return;
+  }
+  
+  let out = '';
+  
+  if (lang === 'json_schema') {
+    const generateJsonSchema = (obj) => {
+      let schema = { type: 'object', properties: {}, required: [], additionalProperties: false };
+      for (const [k, v] of Object.entries(obj)) {
+        schema.required.push(k);
+        if (typeof v === 'string') schema.properties[k] = { type: 'string' };
+        else if (typeof v === 'number') schema.properties[k] = { type: 'number' };
+        else if (typeof v === 'boolean') schema.properties[k] = { type: 'boolean' };
+        else if (Array.isArray(v)) {
+           schema.properties[k] = { type: 'array', items: v.length > 0 ? (typeof v[0] === 'object' ? generateJsonSchema(v[0]) : {type: typeof v[0]}) : {} };
+        } else if (typeof v === 'object' && v !== null) {
+           schema.properties[k] = generateJsonSchema(v);
+        }
+      }
+      return schema;
+    };
+    out = JSON.stringify({
+      name: "custom_response",
+      strict: true,
+      schema: generateJsonSchema(parsed)
+    }, null, 2);
+  } else if (lang === 'zod') {
+    const generateZod = (obj, indent="  ") => {
+      let lines = ["z.object({"];
+      for (const [k, v] of Object.entries(obj)) {
+        let ztype = 'z.any()';
+        if (typeof v === 'string') ztype = 'z.string()';
+        else if (typeof v === 'number') ztype = 'z.number()';
+        else if (typeof v === 'boolean') ztype = 'z.boolean()';
+        else if (Array.isArray(v)) ztype = z.array();
+        else if (typeof v === 'object' && v !== null) ztype = generateZod(v, indent+"  ").trim();
+        lines.push(${indent}: ,);
+      }
+      lines.push(indent.substring(2) + "})");
+      return lines.join('\n');
+    };
+    out = import { z } from "zod";\n\nexport const ResponseSchema = ;
+  } else if (lang === 'pydantic') {
+    const generatePydantic = (obj) => {
+      let lines = ["from pydantic import BaseModel, Field\nfrom typing import List, Optional\n\nclass ResponseModel(BaseModel):"];
+      for (const [k, v] of Object.entries(obj)) {
+        let ptype = 'Any';
+        if (typeof v === 'string') ptype = 'str';
+        else if (typeof v === 'number') ptype = Number.isInteger(v) ? 'int' : 'float';
+        else if (typeof v === 'boolean') ptype = 'bool';
+        else if (Array.isArray(v)) ptype = List[Any]; // Simplified for now
+        else if (typeof v === 'object' && v !== null) ptype = dict; // Simplified for now
+        lines.push(    : );
+      }
+      return lines.join('\n');
+    };
+    out = generatePydantic(parsed);
+  }
+  
+  document.getElementById('schema-output').value = out;
+};
+\n\n\n// llm-cost-calc logic\n
+window.calculateCost = function() {
+  const text = document.getElementById('cost-input').value;
+  const outTokens = parseInt(document.getElementById('cost-output-tokens').value, 10) || 0;
+  
+  // Heuristic token estimation: ~4 chars per token for English, ~1.5 chars per token for Chinese
+  let inTokens = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) > 255) inTokens += 0.6; // Chinese chars usually take 1-2 tokens
+    else inTokens += 0.25;
+  }
+  inTokens = Math.max(1, Math.ceil(inTokens));
+  if (!text) inTokens = 0;
+  
+  // Pricing (per 1M tokens) - Simulated 2026 prices
+  const prices = {
+    gpt4o: { in: 2.50, out: 10.00 },
+    claude: { in: 3.00, out: 15.00 },
+    deepseek: { in: 0.14, out: 0.28 }
+  };
+  
+  const calc = (p) => ((inTokens / 1000000) * p.in + (outTokens / 1000000) * p.out).toFixed(5);
+  
+  document.getElementById('cost-token-count').innerText = ${inTokens} Input +  Output;
+  document.getElementById('cost-gpt4o').innerText = $;
+  document.getElementById('cost-claude').innerText = $;
+  document.getElementById('cost-deepseek').innerText = $;
+  
+  document.getElementById('cost-results').style.display = 'flex';
 };
 \n
 </script>
