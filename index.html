@@ -1462,6 +1462,11 @@ const CATEGORY_I18N = {
 };
 
 const TOOL_I18N = {
+  'cot-extractor': {
+    zh: { name: '<think> 解析与提取', desc: '一键分离 DeepSeek 输出的思考过程与最终答案。' },
+    en: { name: '<think> Extractor', desc: 'Parse and clean Chain of Thought logs from DeepSeek outputs.' }
+  },
+
   'ai-jailbreak-tester': {
     zh: { name: 'Prompt 注入测试', desc: '一键生成红队越狱 Payload，测试大模型的安全防御能力。' },
     en: { name: 'Prompt Jailbreak', desc: 'Generate red-team injection payloads to test LLM security.' }
@@ -1773,6 +1778,44 @@ const STATE = {
 const VIP_PASSWORDS = ['omni8888', 'vip2026', 'freestack-pro', 'redmole-vip'];
 
 const TOOLS = [
+  {
+    id: 'cot-extractor',
+    name: 'DeepSeek <think> Extractor',
+    desc: 'Extract, clean, and visualize Chain of Thought reasoning logs from DeepSeek-R1/o1 outputs.',
+    cat: 'ai',
+    icon: '🧠',
+    badge: 'HOT',
+    render: () => <div class="tool-pane">
+  <div class="tool-header">
+    <h2>DeepSeek &lt;think&gt; CoT Extractor</h2>
+    <p>为 DeepSeek-R1 或 OpenAI o1 的输出文本提供结构化解析。一键分离“思考过程”与“最终答案”，并支持导出为 JSONL 用于模型微调。</p>
+  </div>
+  
+  <div class="field-group">
+    <label class="field-label">输入原始大模型输出 (Raw LLM Output)</label>
+    <textarea id="cot-input" class="textarea-code" rows="8" placeholder="<think>\n1. Analyze the request...\n2. Formulate response...\n</think>\n\nHere is the final answer..."></textarea>
+  </div>
+  
+  <button class="btn-action active" onclick="parseCot()" style="margin-top: 10px;">🧠 解析与清洗输出</button>
+  
+  <div id="cot-results" style="margin-top:20px; display:none; flex-direction:column; gap:15px;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="color:var(--text); margin:0;">🤔 思考过程 (Reasoning Log)</h3>
+      <button class="btn-action" style="padding:4px 8px; font-size:0.8rem;" onclick="navigator.clipboard.writeText(document.getElementById('cot-think-val').innerText); alert('已复制思考过程！');">📋 复制</button>
+    </div>
+    <div id="cot-think-val" style="padding:15px; border-radius:8px; background:rgba(156,163,175,0.1); border:1px solid var(--border); color:var(--text-muted); font-family:var(--font-mono); white-space:pre-wrap; max-height:200px; overflow-y:auto;"></div>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="color:var(--text); margin:0;">✅ 最终答案 (Final Answer)</h3>
+      <button class="btn-action" style="padding:4px 8px; font-size:0.8rem;" onclick="navigator.clipboard.writeText(document.getElementById('cot-final-val').innerText); alert('已复制最终答案！');">📋 复制</button>
+    </div>
+    <div id="cot-final-val" style="padding:15px; border-radius:8px; background:rgba(16,185,129,0.1); border:1px solid #10b981; color:var(--text); white-space:pre-wrap; max-height:300px; overflow-y:auto;"></div>
+    
+  </div>
+</div>
+  },
+
   {
     id: 'ai-jailbreak-tester',
     name: 'Prompt Injection Pentester',
@@ -7987,6 +8030,26 @@ window.generatePayload = function() {
   }
   
   document.getElementById('jailbreak-output').value = out;
+};
+\n\n\n// cot-extractor logic\n
+window.parseCot = function() {
+  const text = document.getElementById('cot-input').value;
+  if (!text) return;
+  
+  let thinkLog = "";
+  let finalAnswer = text;
+  
+  const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/i);
+  if (thinkMatch) {
+    thinkLog = thinkMatch[1].trim();
+    finalAnswer = text.replace(thinkMatch[0], '').trim();
+  } else {
+    thinkLog = "未检测到 <think> 标签。";
+  }
+  
+  document.getElementById('cot-think-val').innerText = thinkLog;
+  document.getElementById('cot-final-val').innerText = finalAnswer;
+  document.getElementById('cot-results').style.display = 'flex';
 };
 \n
 </script>
